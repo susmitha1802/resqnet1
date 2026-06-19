@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ResQNet — AI Disaster Relief Coordination System</title>
+  <meta name="description" content="ResQNet is an AI-powered disaster relief coordination platform connecting disaster victims with volunteers, NGOs, and government agencies for faster, smarter emergency response.">
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/main.css">
+
+  <style>
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      background: var(--grad-hero);
+      display: flex;
+      align-items: center;
+      padding-top: 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+    .hero-orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, rgba(255,75,43,0.12) 0%, transparent 70%); top: -150px; right: -150px; animation: float 8s ease-in-out infinite; }
+    .hero-orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%); bottom: -100px; left: -100px; animation: float 6s ease-in-out infinite reverse; }
+    .hero-orb-3 { width: 250px; height: 250px; background: radial-gradient(circle, rgba(255,140,0,0.06) 0%, transparent 70%); top: 40%; left: 30%; animation: float 5s ease-in-out infinite 2s; }
+
+    .hero-content { position: relative; z-index: 1; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,75,43,0.1);
+      border: 1px solid rgba(255,75,43,0.3);
+      border-radius: 30px;
+      padding: 6px 18px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--primary-light);
+      margin-bottom: 24px;
+    }
+    .hero-eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); animation: pulse 1.5s ease-in-out infinite; }
+
+    .hero-title { font-size: clamp(2.8rem, 6vw, 5rem); font-weight: 900; line-height: 1.08; letter-spacing: -0.03em; margin-bottom: 24px; }
+    .hero-desc { font-size: 1.1rem; color: var(--text-secondary); max-width: 540px; line-height: 1.7; margin-bottom: 40px; }
+
+    .hero-cta { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 60px; }
+
+    .hero-stats {
+      display: flex; gap: 40px; flex-wrap: wrap;
+      padding-top: 40px;
+      border-top: 1px solid var(--border-glass);
+    }
+    .hero-stat-val { font-size: 2rem; font-weight: 800; font-family: 'Space Grotesk', sans-serif; }
+    .hero-stat-val span { color: var(--primary); }
+    .hero-stat-label { color: var(--text-secondary); font-size: 0.82rem; margin-top: 2px; }
+
+    /* Emergency card */
+    .emergency-card {
+      background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(185,28,28,0.06));
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      position: relative;
+      z-index: 1;
+      animation: float 4s ease-in-out infinite;
+    }
+    .emergency-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .emergency-card-icon { width: 48px; height: 48px; border-radius: 12px; background: rgba(239,68,68,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; animation: glow 2s ease-in-out infinite; }
+    .emergency-card-title { font-size: 1rem; font-weight: 700; }
+    .emergency-card-sub { color: var(--text-secondary); font-size: 0.78rem; }
+
+    .req-mini { background: var(--bg-glass); border: 1px solid var(--border-glass); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+    .req-mini-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .req-mini-text { font-size: 0.82rem; flex: 1; }
+    .req-mini-time { font-size: 0.72rem; color: var(--text-muted); }
+
+    /* Feature cards */
+    .feature-icon-wrap {
+      width: 64px; height: 64px;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+    }
+    .feature-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 10px; }
+    .feature-desc { color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6; }
+
+    /* How it works */
+    .step-num {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: var(--grad-primary);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1rem; color: white;
+      margin: 0 auto 16px;
+      box-shadow: var(--shadow-glow-sm);
+    }
+    .step-connector {
+      position: absolute;
+      top: 24px; left: calc(50% + 24px);
+      right: calc(-50% + 24px);
+      height: 2px;
+      background: var(--border-glass);
+    }
+
+    /* Disaster types */
+    .disaster-type-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      text-align: center;
+      transition: var(--transition);
+      cursor: default;
+    }
+    .disaster-type-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-glow-sm); border-color: rgba(255,75,43,0.3); }
+    .disaster-type-icon { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+    .disaster-type-name { font-weight: 700; font-size: 0.9rem; }
+
+    /* Testimonial */
+    .testimonial-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+    }
+    .testimonial-quote { font-size: 0.9rem; line-height: 1.7; color: var(--text-secondary); margin-bottom: 20px; font-style: italic; }
+    .testimonial-author { display: flex; align-items: center; gap: 12px; }
+    .testimonial-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; color: white; }
+    .testimonial-name { font-weight: 600; font-size: 0.875rem; }
+    .testimonial-role { font-size: 0.75rem; color: var(--text-muted); }
+
+    /* CTA Banner */
+    .cta-banner {
+      background: linear-gradient(135deg, #FF4B2B 0%, #FF8C00 50%, #FF4B2B 100%);
+      background-size: 200% 200%;
+      animation: gradientShift 5s ease infinite;
+      border-radius: var(--radius-xl);
+      padding: 60px 40px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-banner::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 12px);
+    }
+    @keyframes gradientShift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+    /* Contact */
+    .contact-info-item { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+    .contact-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(255,75,43,0.1); border: 1px solid rgba(255,75,43,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+    .contact-label { color: var(--text-muted); font-size: 0.78rem; }
+    .contact-value { font-weight: 600; font-size: 0.9rem; }
+
+    /* Footer */
+    .resq-footer { background: var(--bg-card); border-top: 1px solid var(--border-glass); padding: 60px 0 30px; }
+    .footer-brand { margin-bottom: 20px; }
+    .footer-desc { color: var(--text-secondary); font-size: 0.875rem; line-height: 1.7; max-width: 280px; }
+    .footer-heading { font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-primary); margin-bottom: 16px; }
+    .footer-links { list-style: none; }
+    .footer-links li { margin-bottom: 10px; }
+    .footer-links a { color: var(--text-secondary); text-decoration: none; font-size: 0.875rem; transition: var(--transition-sm); }
+    .footer-links a:hover { color: var(--primary); }
+    .footer-bottom { border-top: 1px solid var(--border-glass); margin-top: 40px; padding-top: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: gap; gap: 10px; }
+    .footer-bottom-text { color: var(--text-muted); font-size: 0.8rem; }
+
+    .social-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--bg-card-2); border: 1px solid var(--border-glass); display: inline-flex; align-items: center; justify-content: center; font-size: 0.9rem; color: var(--text-secondary); text-decoration: none; transition: var(--transition-sm); }
+    .social-btn:hover { background: rgba(255,75,43,0.1); border-color: var(--primary); color: var(--primary); }
+  </style>
+</head>
+<body>
+
+<!-- ── NAVBAR ── -->
+<nav class="resq-navbar navbar navbar-expand-lg">
+  <div class="container">
+    <a class="navbar-brand resq-navbar" href="index.html">
+      <div class="brand-icon">🚨</div>
+      <span class="brand-name">Res<span>Q</span>Net</span>
+    </a>
+    <button class="navbar-toggler border-0" type="button" style="color:var(--text-secondary)">
+      <span>☰</span>
+    </button>
+    <div class="navbar-collapse collapse">
+      <ul class="navbar-nav ms-auto align-items-center gap-1">
+        <li class="nav-item"><a class="nav-link active" href="#home">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+        <li class="nav-item"><a class="nav-link" href="#how-it-works">How It Works</a></li>
+        <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+        <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+        <li class="nav-item ms-2">
+          <a class="nav-link" href="auth.html" id="nav-login-btn" style="color:var(--text-secondary)">Login</a>
+        </li>
+        <li class="nav-item">
+          <a class="btn-resq-primary" href="auth.html?tab=register" id="nav-register-btn" style="font-size:0.875rem;padding:9px 20px;">Register</a>
+        </li>
+        <li class="nav-item" style="display:none">
+          <a class="btn-resq-primary" href="#" id="nav-dashboard-btn" style="font-size:0.875rem;padding:9px 20px;">Dashboard</a>
+        </li>
+        <li class="nav-item" style="display:none">
+          <button class="btn-resq-outline" id="nav-logout-btn" style="font-size:0.875rem;padding:9px 20px;">Logout</button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero" id="home">
+  <div class="hero-orb hero-orb-1"></div>
+  <div class="hero-orb hero-orb-2"></div>
+  <div class="hero-orb hero-orb-3"></div>
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6">
+        <div class="hero-content">
+          <div class="hero-eyebrow" data-animate>
+            <div class="hero-eyebrow-dot"></div>
+            AI-Powered Emergency Response
+          </div>
+          <h1 class="hero-title" data-animate data-delay="100">
+            Disaster Relief,<br>
+            <span class="gradient-text">Reimagined</span> with AI
+          </h1>
+          <p class="hero-desc" data-animate data-delay="200">
+            ResQNet connects disaster victims with volunteers, NGOs, and government agencies through intelligent coordination — prioritizing emergencies, eliminating duplicates, and saving lives faster.
+          </p>
+          <div class="hero-cta" data-animate data-delay="300">
+            <a href="help-request.html" class="btn-resq-primary" id="emergency-btn" style="padding:14px 32px;font-size:1rem;animation:glow 2s ease-in-out infinite">
+              🆘 Emergency Help
+            </a>
+            <a href="auth.html" class="btn-resq-secondary" style="padding:14px 32px;font-size:1rem">
+              📋 Report Disaster
+            </a>
+          </div>
+          <div class="hero-stats" data-animate data-delay="400">
+            <div>
+              <div class="hero-stat-val"><span id="hero-stat-requests">—</span></div>
+              <div class="hero-stat-label">Requests Handled</div>
+            </div>
+            <div>
+              <div class="hero-stat-val"><span id="hero-stat-volunteers">—</span></div>
+              <div class="hero-stat-label">Active Volunteers</div>
+            </div>
+            <div>
+              <div class="hero-stat-val"><span id="hero-stat-completed">—</span></div>
+              <div class="hero-stat-label">Completed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="emergency-card" data-animate data-delay="200">
+          <div class="emergency-card-header">
+            <div class="emergency-card-icon">🚨</div>
+            <div>
+              <div class="emergency-card-title">Live Emergency Feed</div>
+              <div class="emergency-card-sub">Real-time incoming requests</div>
+            </div>
+            <div style="margin-left:auto">
+              <span class="status-dot online"></span>
+              <span style="font-size:0.75rem;color:var(--text-muted)">Live</span>
+            </div>
+          </div>
+
+          <!-- Live feed loaded from API -->
+          <div id="live-feed-container">
+            <div class="req-mini" style="justify-content:center;color:var(--text-muted);font-size:0.82rem">⏳ Loading live feed...</div>
+          </div>
+
+          <!-- AI badge -->
+          <div style="margin-top:16px;display:flex;align-items:center;gap:10px;padding:12px;background:rgba(255,75,43,0.06);border-radius:var(--radius);border:1px solid rgba(255,75,43,0.15)">
+            <span style="font-size:1.2rem">🤖</span>
+            <div>
+              <div style="font-size:0.8rem;font-weight:600;color:var(--primary)">AI Prioritization Active</div>
+              <div style="font-size:0.72rem;color:var(--text-muted)">Analyzing incoming requests in real-time</div>
+            </div>
+            <div style="margin-left:auto;font-size:0.75rem;color:var(--success)">▲ Live</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<section class="section" id="features" style="background:var(--bg-card)">
+  <div class="container">
+    <div class="text-center mb-5" data-animate>
+      <div class="hero-eyebrow d-inline-flex mb-3">✨ Platform Features</div>
+      <h2 class="section-heading">Everything you need for<br><span class="gradient-text">effective disaster response</span></h2>
+      <p style="color:var(--text-secondary);max-width:500px;margin:16px auto 0">Powered by AI, designed for speed, built for all stakeholders in a disaster scenario.</p>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-md-6 col-lg-4" data-animate data-delay="0">
+        <div class="resq-card h-100">
+          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(185,28,28,0.1))">🤖</div>
+          <div class="feature-title">AI Priority Prediction</div>
+          <div class="feature-desc">Machine learning instantly classifies every request as High, Medium, or Low priority — ensuring life-threatening emergencies get immediate attention.</div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4" data-animate data-delay="100">
+        <div class="resq-card h-100">
+          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,rgba(59,130,246,0.15),rgba(29,78,216,0.1))">🗺️</div>
+          <div class="feature-title">Live Map Tracking</div>
+          <div class="feature-desc">Real-time interactive maps show disaster zones, pending help requests, and volunteer locations with colour-coded priority indicators.</div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4" data-animate data-delay="200">
+        <div class="resq-card h-100">
+          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(5,150,105,0.1))">🔍</div>
+          <div class="feature-title">Duplicate Detection</div>
+          <div class="feature-desc">Smart algorithms identify and flag duplicate requests based on location, type, and timestamp — preventing resource wastage.</div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4" data-animate data-delay="300">
+        <div class="resq-card h-100">
+          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(217,119,6,0.1))">📦</div>
+          <div class="feature-title">Resource Forecasting</div>
+          <div class="feature-desc">Predicts food, water, and medical supply requirements based on affected population and request patterns across disaster zones.</div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4" data-animate data-delay="400">
+        <div class="resq-card h-100">
+          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,rgba(139,92,246,0.15),rgba(109,40,217,0.1))">👥</div>
+          <div class="feature-title">Volunteer Management</div>
+          <div class="feature-desc">Volunteers receive nearby requests sorted by priority, can accept tasks, and update statuses in real-time for transparent coordination.</div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4" data-animate data-delay="500">
+        <div class="resq-card h-100">
+          <div class="feature-icon-wrap" style="background:linear-gradient(135deg,rgba(255,75,43,0.15),rgba(255,140,0,0.1))">📊</div>
+          <div class="feature-title">Admin Analytics</div>
+          <div class="feature-desc">Comprehensive dashboards with real-time charts, relief distribution statistics, and high-priority case monitoring for administrators.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DISASTER TYPES ── -->
+<section class="section">
+  <div class="container">
+    <div class="text-center mb-5" data-animate>
+      <div class="hero-eyebrow d-inline-flex mb-3">🌍 Supported Disasters</div>
+      <h2 class="section-heading">Coordinating relief for<br><span class="gradient-text">every disaster type</span></h2>
+    </div>
+    <div class="row g-4 justify-content-center">
+      <div class="col-6 col-md-4 col-lg-2" data-animate data-delay="0"><div class="disaster-type-card"><span class="disaster-type-icon">🌊</span><div class="disaster-type-name">Flood</div></div></div>
+      <div class="col-6 col-md-4 col-lg-2" data-animate data-delay="80"><div class="disaster-type-card"><span class="disaster-type-icon">🌀</span><div class="disaster-type-name">Cyclone</div></div></div>
+      <div class="col-6 col-md-4 col-lg-2" data-animate data-delay="160"><div class="disaster-type-card"><span class="disaster-type-icon">🌍</span><div class="disaster-type-name">Earthquake</div></div></div>
+      <div class="col-6 col-md-4 col-lg-2" data-animate data-delay="240"><div class="disaster-type-card"><span class="disaster-type-icon">⛰️</span><div class="disaster-type-name">Landslide</div></div></div>
+      <div class="col-6 col-md-4 col-lg-2" data-animate data-delay="320"><div class="disaster-type-card"><span class="disaster-type-icon">🔥</span><div class="disaster-type-name">Fire</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<section class="section" id="how-it-works" style="background:var(--bg-card)">
+  <div class="container">
+    <div class="text-center mb-5" data-animate>
+      <div class="hero-eyebrow d-inline-flex mb-3">🔄 Workflow</div>
+      <h2 class="section-heading">How <span class="gradient-text">ResQNet</span> works</h2>
+    </div>
+    <div class="row g-4 text-center">
+      <div class="col-md-6 col-lg-3" data-animate data-delay="0">
+        <div class="step-num">1</div>
+        <h5 style="font-weight:700;margin-bottom:10px">Register & Login</h5>
+        <p style="color:var(--text-secondary);font-size:0.875rem">Victims and volunteers create role-specific accounts on the platform.</p>
+      </div>
+      <div class="col-md-6 col-lg-3" data-animate data-delay="100">
+        <div class="step-num">2</div>
+        <h5 style="font-weight:700;margin-bottom:10px">Report / Request</h5>
+        <p style="color:var(--text-secondary);font-size:0.875rem">Submit disaster incidents or help requests with location and images.</p>
+      </div>
+      <div class="col-md-6 col-lg-3" data-animate data-delay="200">
+        <div class="step-num">3</div>
+        <h5 style="font-weight:700;margin-bottom:10px">AI Analyzes</h5>
+        <p style="color:var(--text-secondary);font-size:0.875rem">The AI module assigns priority, detects duplicates, and forecasts resources.</p>
+      </div>
+      <div class="col-md-6 col-lg-3" data-animate data-delay="300">
+        <div class="step-num">4</div>
+        <h5 style="font-weight:700;margin-bottom:10px">Relief Dispatched</h5>
+        <p style="color:var(--text-secondary);font-size:0.875rem">Volunteers accept tasks, admin monitors progress, victims receive help.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── ABOUT ── -->
+<section class="section" id="about">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-5" data-animate>
+        <div class="hero-eyebrow mb-3">ℹ️ About ResQNet</div>
+        <h2 class="section-heading mb-4">Built to save lives <span class="gradient-text">faster</span></h2>
+        <p style="color:var(--text-secondary);line-height:1.8;margin-bottom:20px">
+          ResQNet is an academic CSP project developed by a team of 4 students to address the critical gap in disaster relief coordination. The platform bridges the communication barrier between affected communities and relief organizations.
+        </p>
+        <p style="color:var(--text-secondary);line-height:1.8;margin-bottom:30px">
+          By integrating AI-based priority prediction, real-time maps, and structured volunteer management — ResQNet ensures no request falls through the cracks, even during large-scale disasters.
+        </p>
+        <div class="row g-3">
+          <div class="col-6">
+            <div style="padding:16px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border-glass)">
+              <div style="font-size:1.4rem;font-weight:800;color:var(--primary);font-family:'Space Grotesk',sans-serif">4</div>
+              <div style="color:var(--text-secondary);font-size:0.8rem">AI Modules</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div style="padding:16px;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border-glass)">
+              <div style="font-size:1.4rem;font-weight:800;color:var(--primary);font-family:'Space Grotesk',sans-serif">3</div>
+              <div style="color:var(--text-secondary);font-size:0.8rem">User Roles</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-7" data-animate data-delay="200">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="testimonial-card">
+              <div style="font-size:2rem;margin-bottom:12px">🤖</div>
+              <div class="testimonial-quote">AI-powered priority scoring instantly classifies each request as High, Medium, or Low — so the most critical cases are never missed.</div>
+              <div class="testimonial-author">
+                <div class="testimonial-avatar" style="background:var(--grad-primary)">🚨</div>
+                <div>
+                  <div class="testimonial-name">AI Priority Engine</div>
+                  <div class="testimonial-role">Core Module</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="testimonial-card">
+              <div style="font-size:2rem;margin-bottom:12px">🔍</div>
+              <div class="testimonial-quote">Smart duplicate detection identifies overlapping requests by location, type, and time — preventing resource wastage during mass disasters.</div>
+              <div class="testimonial-author">
+                <div class="testimonial-avatar" style="background:var(--grad-success)">🔍</div>
+                <div>
+                  <div class="testimonial-name">Duplicate Detector</div>
+                  <div class="testimonial-role">Core Module</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="testimonial-card">
+              <div style="font-size:2rem;margin-bottom:12px">📦</div>
+              <div class="testimonial-quote">The resource forecasting module predicts food, water, and medical supply needs based on number of people affected, request type, and severity — giving admins actionable deployment data in real time.</div>
+              <div class="testimonial-author">
+                <div class="testimonial-avatar" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8)">📦</div>
+                <div>
+                  <div class="testimonial-name">Resource Forecast</div>
+                  <div class="testimonial-role">Core Module</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA BANNER ── -->
+<section class="section-sm">
+  <div class="container" data-animate>
+    <div class="cta-banner">
+      <div style="position:relative;z-index:1">
+        <div style="font-size:0.8rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;opacity:0.9">Act Now</div>
+        <h2 style="font-size:2.5rem;font-weight:900;color:white;margin-bottom:16px">Need help right now?</h2>
+        <p style="color:rgba(255,255,255,0.85);max-width:440px;margin:0 auto 32px;font-size:1rem;line-height:1.6">Don't wait. Submit your emergency request and our AI will connect you with volunteers immediately.</p>
+        <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+          <a href="help-request.html" class="btn-resq-secondary" style="background:white;color:var(--primary);border-color:white;padding:14px 32px;font-size:1rem">
+            🆘 Request Help Now
+          </a>
+          <a href="auth.html" class="btn-resq-secondary" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.4);color:white;padding:14px 32px;font-size:1rem">
+            🤝 Join as Volunteer
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CONTACT ── -->
+<section class="section" id="contact" style="background:var(--bg-card)">
+  <div class="container">
+    <div class="row g-5">
+      <div class="col-lg-5" data-animate>
+        <div class="hero-eyebrow mb-3">📬 Contact Us</div>
+        <h2 class="section-heading mb-4"><span class="gradient-text">Get in touch</span> with our team</h2>
+        <p style="color:var(--text-secondary);line-height:1.8;margin-bottom:32px">Have questions about the platform? We're here to help organizations, volunteers, and disaster-affected communities get started.</p>
+
+        <div class="contact-info-item">
+          <div class="contact-icon">📧</div>
+          <div>
+            <div class="contact-label">GitHub / Project Repo</div>
+            <div class="contact-value">github.com/resqnet</div>
+          </div>
+        </div>
+        <div class="contact-info-item">
+          <div class="contact-icon">📞</div>
+          <div>
+            <div class="contact-label">National Emergency (India)</div>
+            <div class="contact-value">🚑 112 &nbsp;·&nbsp; 🚒 101 &nbsp;·&nbsp; 🚑 108</div>
+          </div>
+        </div>
+        <div class="contact-info-item">
+          <div class="contact-icon">📍</div>
+          <div>
+            <div class="contact-label">NDRF Helpline</div>
+            <div class="contact-value">1078</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-7" data-animate data-delay="200">
+        <div class="resq-card">
+          <h5 style="font-weight:700;margin-bottom:24px">Send us a message</h5>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="resq-form-group">
+                <label class="resq-label">Full Name</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">👤</span>
+                  <input type="text" class="resq-input" placeholder="Your full name" id="contact-name">
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="resq-form-group">
+                <label class="resq-label">Email Address</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">📧</span>
+                  <input type="email" class="resq-input" placeholder="your@email.com" id="contact-email">
+                </div>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="resq-form-group">
+                <label class="resq-label">Subject</label>
+                <input type="text" class="resq-input" placeholder="How can we help?" id="contact-subject">
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="resq-form-group">
+                <label class="resq-label">Message</label>
+                <textarea class="resq-textarea" placeholder="Your message..." id="contact-message" rows="4"></textarea>
+              </div>
+            </div>
+            <div class="col-12">
+              <button class="btn-resq-primary w-100" id="contact-submit-btn" onclick="handleContactSubmit()">
+                📨 Send Message
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer class="resq-footer">
+  <div class="container">
+    <div class="row g-5">
+      <div class="col-lg-4">
+        <div class="footer-brand">
+          <a href="index.html" style="display:flex;align-items:center;gap:10px;text-decoration:none">
+            <div class="brand-icon" style="width:36px;height:36px;border-radius:10px;background:var(--grad-primary);display:flex;align-items:center;justify-content:center;font-size:1rem">🚨</div>
+            <span style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:1.2rem;color:var(--text-primary)">Res<span style="color:var(--primary)">Q</span>Net</span>
+          </a>
+        </div>
+        <p class="footer-desc">AI-powered disaster relief coordination connecting victims, volunteers, and administrators for faster emergency response.</p>
+        <div style="margin-top:20px;display:flex;gap:10px">
+          <a href="#" class="social-btn">🐦</a>
+          <a href="#" class="social-btn">📘</a>
+          <a href="#" class="social-btn">📸</a>
+          <a href="#" class="social-btn">💼</a>
+        </div>
+      </div>
+      <div class="col-6 col-lg-2">
+        <div class="footer-heading">Platform</div>
+        <ul class="footer-links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="auth.html">Login</a></li>
+          <li><a href="auth.html?tab=register">Register</a></li>
+          <li><a href="map.html">Live Map</a></li>
+        </ul>
+      </div>
+      <div class="col-6 col-lg-2">
+        <div class="footer-heading">Actions</div>
+        <ul class="footer-links">
+          <li><a href="help-request.html">Request Help</a></li>
+          <li><a href="report-disaster.html">Report Disaster</a></li>
+          <li><a href="volunteer-dashboard.html">Volunteer</a></li>
+          <li><a href="admin-dashboard.html">Admin</a></li>
+        </ul>
+      </div>
+      <div class="col-6 col-lg-2">
+        <div class="footer-heading">Resources</div>
+        <ul class="footer-links">
+          <li><a href="#features">Features</a></li>
+          <li><a href="#how-it-works">How It Works</a></li>
+          <li><a href="#about">About Us</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </div>
+      <div class="col-6 col-lg-2">
+        <div class="footer-heading">Emergency</div>
+        <ul class="footer-links">
+          <li><a href="tel:112">Police: 112</a></li>
+          <li><a href="tel:101">Fire: 101</a></li>
+          <li><a href="tel:108">Ambulance: 108</a></li>
+          <li><a href="tel:1078">NDRF: 1078</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-bottom-text">© 2024 ResQNet. Built for CSP Academic Project. All rights reserved.</div>
+      <div class="footer-bottom-text">Made with ❤️ for disaster relief coordination</div>
+    </div>
+  </div>
+</footer>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+<script>
+  /* ── Contact form ── */
+  function handleContactSubmit() {
+    const name = document.getElementById('contact-name').value.trim();
+    const email = document.getElementById('contact-email').value.trim();
+    const msg = document.getElementById('contact-message').value.trim();
+    if (!name || !email || !msg) { Toast.show('Please fill in all fields', 'warning'); return; }
+    Toast.show('Message sent! We\'ll get back to you within 24 hours. 📧', 'success');
+    document.getElementById('contact-name').value = '';
+    document.getElementById('contact-email').value = '';
+    document.getElementById('contact-subject').value = '';
+    document.getElementById('contact-message').value = '';
+  }
+
+  /* ── Live Feed + Hero Stats from API ── */
+  const TYPE_ICONS  = { Rescue: '🚁', Food: '🍱', Water: '💧', Medicine: '💊', Shelter: '🏠' };
+  const PRIO_COLORS = { High: '#EF4444', Medium: '#F59E0B', Low: '#10B981' };
+
+  async function loadLiveFeed() {
+    try {
+      const res  = await fetch('http://127.0.0.1:5000/map/data');
+      const data = await res.json();
+      const feed = document.getElementById('live-feed-container');
+      if (!feed) return;
+
+      const requests = (data.requests || []).slice(0, 4); // show latest 4
+      if (!requests.length) {
+        feed.innerHTML = `<div class="req-mini" style="justify-content:center;color:var(--text-muted);font-size:0.82rem">📭 No active requests right now</div>`;
+        return;
+      }
+
+      feed.innerHTML = requests.map(r => {
+        const color = PRIO_COLORS[r.priority_level] || '#9CA3AF';
+        const icon  = TYPE_ICONS[r.request_type]   || '📋';
+        const ago   = timeAgo(r.created_at);
+        return `
+          <div class="req-mini">
+            <div class="req-mini-dot" style="background:${color};box-shadow:0 0 6px ${color}"></div>
+            <div class="req-mini-text">
+              <div style="font-weight:600;font-size:0.85rem">${icon} ${r.request_type} — ${r.name}</div>
+              <div style="color:var(--text-muted);font-size:0.75rem">${r.number_of_people} people • ${r.priority_level} Priority</div>
+            </div>
+            <div class="req-mini-time">${ago}</div>
+          </div>`;
+      }).join('');
+    } catch {
+      const feed = document.getElementById('live-feed-container');
+      if (feed) feed.innerHTML = `<div class="req-mini" style="justify-content:center;color:var(--text-muted);font-size:0.82rem">⚡ Connect backend to see live feed</div>`;
+    }
+  }
+
+  async function loadHeroStats() {
+    try {
+      const res  = await fetch('http://127.0.0.1:5000/admin/dashboard', {
+        headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('resqnet_token') || '') }
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const s    = data.stats || {};
+
+      const animate = (id, val) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        let v = 0;
+        const step = () => { v = Math.min(v + Math.ceil(Math.max(val,1)/20), val); el.textContent = v; if (v < val) requestAnimationFrame(step); };
+        requestAnimationFrame(step);
+      };
+
+      animate('hero-stat-requests',   s.total_requests    || 0);
+      animate('hero-stat-volunteers', s.active_volunteers || 0);
+      animate('hero-stat-completed',  s.completed         || 0);
+    } catch {
+      // Not logged in as admin or backend not available — just leave em as dashes
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadLiveFeed();
+    loadHeroStats();
+  });
+
+</script>
+</body>
+</html>

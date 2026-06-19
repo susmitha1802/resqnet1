@@ -1,0 +1,9 @@
+{
+  "pythonVersion": "3.12",
+  "pythonPlatform": "Windows",
+  "pythonPath": "C:/ProgramData/anaconda3/python.exe",
+  "venvPath": "C:/ProgramData/anaconda3",
+  "reportMissingModuleSource": "none",
+  "reportMissingImports": "warning",
+  "typeCheckingMode": "basic"
+}

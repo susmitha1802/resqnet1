@@ -1,0 +1,286 @@
+/* ============================================================
+   ResQNet — Auth Portal Styles
+   ============================================================ */
+
+.auth-page {
+  min-height: 100vh;
+  background: var(--bg-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+}
+
+/* Animated background */
+.auth-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+.auth-bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: float 6s ease-in-out infinite;
+}
+.auth-bg-orb:nth-child(1) {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(255,75,43,0.15) 0%, transparent 70%);
+  top: -100px; left: -100px;
+  animation-delay: 0s;
+}
+.auth-bg-orb:nth-child(2) {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(255,140,0,0.1) 0%, transparent 70%);
+  bottom: -80px; right: -80px;
+  animation-delay: 3s;
+}
+.auth-bg-orb:nth-child(3) {
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%);
+  top: 50%; right: 30%;
+  animation-delay: 1.5s;
+}
+
+/* Portal wrapper */
+.auth-wrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 960px;
+}
+
+/* Logo / header */
+.auth-logo {
+  text-align: center;
+  margin-bottom: 40px;
+  animation: slideInUp 0.6s ease;
+}
+.auth-logo-icon {
+  width: 64px; height: 64px;
+  background: var(--grad-primary);
+  border-radius: 18px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 1.8rem;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-glow);
+  animation: glow 2s ease-in-out infinite;
+}
+.auth-logo-text {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+.auth-logo-text span { color: var(--primary); }
+.auth-logo-tagline {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-top: 6px;
+}
+
+/* Role selection cards */
+.role-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 32px;
+  animation: slideInUp 0.7s ease;
+}
+@media (max-width: 600px) {
+  .role-selector { grid-template-columns: 1fr; }
+}
+
+.role-card {
+  background: var(--bg-card);
+  border: 2px solid var(--border-glass);
+  border-radius: var(--radius-xl);
+  padding: 32px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+}
+.role-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--grad-primary);
+  opacity: 0;
+  transition: var(--transition);
+}
+.role-card:hover { border-color: rgba(255,75,43,0.5); transform: translateY(-4px); box-shadow: var(--shadow-glow-sm); }
+.role-card.selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary), var(--shadow-glow-sm);
+}
+.role-card.selected::before { opacity: 0.06; }
+
+.role-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+.role-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  position: relative; z-index: 1;
+}
+.role-desc {
+  color: var(--text-secondary);
+  font-size: 0.83rem;
+  line-height: 1.5;
+  position: relative; z-index: 1;
+}
+.role-badge {
+  position: absolute;
+  top: 16px; right: 16px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem;
+  color: white;
+  opacity: 0;
+  transform: scale(0);
+  transition: var(--transition);
+}
+.role-card.selected .role-badge { opacity: 1; transform: scale(1); }
+
+/* Auth form container */
+.auth-form-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-xl);
+  padding: 40px;
+  animation: slideInUp 0.8s ease;
+  position: relative;
+  overflow: hidden;
+}
+.auth-form-container::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--grad-primary);
+}
+
+/* Tab switcher */
+.auth-tabs {
+  display: flex;
+  background: var(--bg-card-2);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+  margin-bottom: 32px;
+}
+.auth-tab {
+  flex: 1;
+  padding: 12px;
+  text-align: center;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  transition: var(--transition);
+  border: none;
+  background: transparent;
+}
+.auth-tab.active {
+  background: var(--grad-primary);
+  color: white;
+  box-shadow: var(--shadow-glow-sm);
+}
+
+/* Volunteer extras */
+.volunteer-extras {
+  display: none;
+  animation: slideInUp 0.4s ease;
+}
+.volunteer-extras.visible { display: block; }
+
+.skills-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.skill-chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border-glass);
+  background: var(--bg-card-2);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: var(--transition-sm);
+  user-select: none;
+}
+.skill-chip:hover { border-color: var(--primary); color: var(--primary); }
+.skill-chip.selected { background: rgba(255,75,43,0.15); border-color: var(--primary); color: var(--primary); font-weight: 600; }
+
+/* Form divider */
+.form-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.form-divider::before, .form-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-glass);
+}
+
+/* Password strength */
+.password-strength { margin-top: 6px; }
+.strength-bar { display: flex; gap: 4px; margin-bottom: 4px; }
+.strength-segment { flex: 1; height: 3px; border-radius: 2px; background: var(--bg-card-2); transition: background 0.3s; }
+.strength-text { font-size: 0.75rem; color: var(--text-muted); }
+
+/* Auth footer link */
+.auth-footer-link { text-align: center; margin-top: 20px; color: var(--text-secondary); font-size: 0.875rem; }
+.auth-footer-link a { color: var(--primary); text-decoration: none; font-weight: 600; }
+.auth-footer-link a:hover { text-decoration: underline; }
+
+/* Floating input icons */
+.input-with-icon { position: relative; }
+.input-with-icon .resq-input { padding-left: 44px; }
+.input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1rem; pointer-events: none; }
+.input-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); cursor: pointer; font-size: 0.9rem; }
+.input-toggle:hover { color: var(--primary); }
+
+/* Availability toggle */
+.toggle-switch { display: flex; align-items: center; gap: 12px; }
+.toggle-input { display: none; }
+.toggle-label {
+  width: 48px; height: 26px;
+  background: var(--bg-card-2);
+  border-radius: 13px;
+  position: relative;
+  cursor: pointer;
+  border: 1px solid var(--border-glass);
+  transition: var(--transition);
+}
+.toggle-label::after {
+  content: '';
+  position: absolute;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  top: 2px; left: 2px;
+  transition: var(--transition);
+}
+.toggle-input:checked + .toggle-label { background: var(--primary); border-color: var(--primary); }
+.toggle-input:checked + .toggle-label::after { left: 24px; background: white; }
+.toggle-text { font-size: 0.875rem; color: var(--text-secondary); }

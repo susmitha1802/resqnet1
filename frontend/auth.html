@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ResQNet — Login / Register</title>
+  <meta name="description" content="Sign in or create an account on ResQNet — choose your role as disaster victim, volunteer, NGO, or admin.">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <style>
+    .role-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .role-card { cursor: pointer; border-radius: 14px; padding: 14px 12px; background: var(--bg-card); border: 2px solid var(--border-glass); transition: all 0.25s ease; position: relative; text-align: center; }
+    .role-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .role-card.selected { border-color: var(--primary); background: rgba(var(--primary-rgb, 99,102,241), 0.12); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+    .role-badge { position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 50%; background: var(--primary); color: white; font-size: 10px; display: none; align-items: center; justify-content: center; font-weight: 700; }
+    .role-card.selected .role-badge { display: flex; }
+    .role-icon { font-size: 1.6rem; display: block; margin-bottom: 6px; }
+    .role-title { font-size: 0.8rem; font-weight: 700; color: var(--text-primary); }
+    .role-desc { font-size: 0.7rem; color: var(--text-muted); margin-top: 3px; line-height: 1.3; display: none; }
+    .role-card.selected .role-desc { display: block; }
+
+    /* Admin secret code field */
+    .admin-extras { display: none; margin-top: 16px; }
+    .admin-extras.visible { display: block; }
+    /* NGO extras */
+    .ngo-extras { display: none; margin-top: 16px; }
+    .ngo-extras.visible { display: block; }
+
+    .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    @media (max-width: 480px) { .role-selector { grid-template-columns: 1fr 1fr; } .demo-grid { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+<div class="auth-bg">
+  <div class="auth-bg-orb"></div>
+  <div class="auth-bg-orb"></div>
+  <div class="auth-bg-orb"></div>
+</div>
+
+<!-- Back to home -->
+<a href="index.html" style="position:fixed;top:20px;left:20px;z-index:100;display:flex;align-items:center;gap:8px;color:var(--text-secondary);text-decoration:none;font-size:0.875rem;transition:color 0.2s" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-secondary)'">
+  ← Back to Home
+</a>
+
+<div class="auth-page">
+  <div class="auth-wrapper">
+
+    <!-- Logo -->
+    <div class="auth-logo">
+      <a href="index.html" style="text-decoration:none">
+        <div class="auth-logo-icon">🚨</div>
+        <div class="auth-logo-text">Res<span>Q</span>Net</div>
+      </a>
+      <div class="auth-logo-tagline">AI-Powered Disaster Relief Coordination</div>
+    </div>
+
+    <!-- Role Selection — 4 cards -->
+    <div class="role-selector">
+      <div class="role-card" id="role-victim">
+        <div class="role-badge">✓</div>
+        <span class="role-icon">🆘</span>
+        <div class="role-title">Disaster Victim</div>
+        <div class="role-desc">Report disasters & submit help requests for food, water, rescue or shelter.</div>
+      </div>
+      <div class="role-card" id="role-volunteer">
+        <div class="role-badge">✓</div>
+        <span class="role-icon">🤝</span>
+        <div class="role-title">Volunteer</div>
+        <div class="role-desc">Accept relief tasks and provide on-ground assistance to victims.</div>
+      </div>
+      <div class="role-card" id="role-ngo">
+        <div class="role-badge">✓</div>
+        <span class="role-icon">🏢</span>
+        <div class="role-title">NGO / Organization</div>
+        <div class="role-desc">Manage relief resources, inventory, and coordinate disaster response.</div>
+      </div>
+      <div class="role-card" id="role-admin">
+        <div class="role-badge">✓</div>
+        <span class="role-icon">🛡️</span>
+        <div class="role-title">Administrator</div>
+        <div class="role-desc">Full platform access — analytics, user management, and reports.</div>
+      </div>
+    </div>
+
+    <!-- Auth Form Container -->
+    <div class="auth-form-container">
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab" data-tab="login">🔑 Sign In</button>
+        <button class="auth-tab" data-tab="register">📝 Create Account</button>
+      </div>
+
+      <!-- Form Heading -->
+      <h4 id="form-heading" style="margin-bottom:24px;font-size:1.2rem">User Login</h4>
+
+      <!-- ── LOGIN FORM ── -->
+      <div id="login-form-wrap">
+        <form id="login-form" autocomplete="on">
+          <div class="resq-form-group">
+            <label class="resq-label">Email Address</label>
+            <div class="input-with-icon">
+              <span class="input-icon">📧</span>
+              <input type="email" class="resq-input" id="login-email" placeholder="your@email.com" autocomplete="email" required>
+            </div>
+          </div>
+          <div class="resq-form-group">
+            <label class="resq-label">Password</label>
+            <div class="input-with-icon">
+              <span class="input-icon">🔒</span>
+              <input type="password" class="resq-input" id="login-password" placeholder="Enter your password" autocomplete="current-password" required>
+              <span class="input-toggle" data-target="login-password">👁️</span>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem;color:var(--text-secondary)">
+              <input type="checkbox" style="accent-color:var(--primary)"> Remember me
+            </label>
+            <a href="#" style="color:var(--primary);font-size:0.85rem;text-decoration:none">Forgot password?</a>
+          </div>
+          <button type="submit" class="btn-resq-primary w-100" id="login-btn" style="padding:14px;font-size:1rem;justify-content:center">
+            🔑 Sign In
+          </button>
+        </form>
+
+        <div class="form-divider">or try demo accounts</div>
+        <div class="demo-grid">
+          <button class="btn-resq-secondary" onclick="demoLogin('victim')">🆘 Victim Demo</button>
+          <button class="btn-resq-secondary" onclick="demoLogin('volunteer')">🤝 Volunteer Demo</button>
+          <button class="btn-resq-secondary" onclick="demoLogin('ngo')">🏢 NGO Demo</button>
+          <button class="btn-resq-secondary" onclick="demoLogin('admin')">🛡️ Admin Demo</button>
+        </div>
+
+        <!-- Demo credentials hint -->
+        <div class="resq-alert info" style="margin-top:16px;font-size:0.78rem">
+          ℹ️ <strong>Demo credentials:</strong><br>
+          user@demo.com / vol@demo.com / ngo@demo.com — password: <code>demo123</code><br>
+          admin@demo.com — password: <code>admin123</code>
+        </div>
+      </div>
+
+      <!-- ── REGISTER FORM ── -->
+      <div id="register-form-wrap" style="display:none">
+        <form id="register-form" autocomplete="on">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="resq-form-group">
+                <label class="resq-label">Full Name *</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">👤</span>
+                  <input type="text" class="resq-input" id="reg-name" placeholder="Your full name" required>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="resq-form-group">
+                <label class="resq-label">Phone Number *</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">📞</span>
+                  <input type="tel" class="resq-input" id="reg-phone" placeholder="+91 98765 43210" required>
+                </div>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="resq-form-group">
+                <label class="resq-label">Email Address *</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">📧</span>
+                  <input type="email" class="resq-input" id="reg-email" placeholder="your@email.com" required>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="resq-form-group">
+                <label class="resq-label">Password *</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">🔒</span>
+                  <input type="password" class="resq-input" id="reg-password" placeholder="Min 6 characters" required>
+                  <span class="input-toggle" data-target="reg-password">👁️</span>
+                </div>
+                <div class="password-strength">
+                  <div class="strength-bar">
+                    <div class="strength-segment"></div>
+                    <div class="strength-segment"></div>
+                    <div class="strength-segment"></div>
+                    <div class="strength-segment"></div>
+                  </div>
+                  <div class="strength-text"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="resq-form-group">
+                <label class="resq-label">Confirm Password *</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">🔒</span>
+                  <input type="password" class="resq-input" id="reg-confirm" placeholder="Repeat password" required>
+                  <span class="input-toggle" data-target="reg-confirm">👁️</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Volunteer Extras ── -->
+          <div class="volunteer-extras" id="volunteer-extras">
+            <div class="resq-divider"></div>
+            <h6 style="font-weight:700;margin-bottom:16px;color:var(--primary)">🤝 Volunteer Details</h6>
+            <div class="row g-3">
+              <div class="col-12">
+                <div class="resq-form-group">
+                  <label class="resq-label">Your Location / Area</label>
+                  <div class="input-with-icon">
+                    <span class="input-icon">📍</span>
+                    <input type="text" class="resq-input" id="vol-location" placeholder="e.g. Kukatpally, Hyderabad">
+                  </div>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="resq-form-group">
+                  <label class="resq-label">Skills / Expertise</label>
+                  <div class="skills-grid">
+                    <div class="skill-chip" data-skill="First Aid">🩺 First Aid</div>
+                    <div class="skill-chip" data-skill="Swimming">🏊 Swimming</div>
+                    <div class="skill-chip" data-skill="Driving">🚗 Driving</div>
+                    <div class="skill-chip" data-skill="Medical">💊 Medical</div>
+                    <div class="skill-chip" data-skill="Search & Rescue">🔦 Search & Rescue</div>
+                    <div class="skill-chip" data-skill="Cooking">🍳 Cooking</div>
+                    <div class="skill-chip" data-skill="Construction">🔨 Construction</div>
+                    <div class="skill-chip" data-skill="Logistics">📦 Logistics</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="resq-form-group">
+                  <label class="resq-label">Availability Status</label>
+                  <div class="toggle-switch">
+                    <input type="checkbox" id="vol-availability" class="toggle-input" checked>
+                    <label for="vol-availability" class="toggle-label"></label>
+                    <span class="toggle-text">Available for immediate deployment</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── NGO Extras ── -->
+          <div class="ngo-extras" id="ngo-extras">
+            <div class="resq-divider"></div>
+            <h6 style="font-weight:700;margin-bottom:16px;color:#10B981">🏢 Organization Details</h6>
+            <div class="row g-3">
+              <div class="col-12">
+                <div class="resq-form-group">
+                  <label class="resq-label">Organization Name *</label>
+                  <div class="input-with-icon">
+                    <span class="input-icon">🏢</span>
+                    <input type="text" class="resq-input" id="ngo-org-name" placeholder="e.g. Relief India Foundation">
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="resq-form-group">
+                  <label class="resq-label">Organization Type</label>
+                  <select class="resq-select" id="ngo-org-type">
+                    <option value="Disaster Relief NGO">Disaster Relief NGO</option>
+                    <option value="Medical NGO">Medical NGO</option>
+                    <option value="Food Aid Organization">Food Aid Organization</option>
+                    <option value="Rescue Organization">Rescue Organization</option>
+                    <option value="Government Agency">Government Agency</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="resq-form-group">
+                  <label class="resq-label">Coverage Area</label>
+                  <div class="input-with-icon">
+                    <span class="input-icon">📍</span>
+                    <input type="text" class="resq-input" id="ngo-area" placeholder="e.g. Hyderabad, Telangana">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Admin Extras ── -->
+          <div class="admin-extras" id="admin-extras">
+            <div class="resq-divider"></div>
+            <h6 style="font-weight:700;margin-bottom:12px;color:#EF4444">🛡️ Admin Authorization</h6>
+            <div class="resq-alert" style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:12px;margin-bottom:14px;font-size:0.8rem;color:var(--text-secondary)">
+              ⚠️ Admin registration requires a secret authorization code. Contact your system administrator.
+            </div>
+            <div class="resq-form-group">
+              <label class="resq-label">Admin Secret Code *</label>
+              <div class="input-with-icon">
+                <span class="input-icon">🔑</span>
+                <input type="password" class="resq-input" id="admin-secret-code" placeholder="Enter admin secret code">
+                <span class="input-toggle" data-target="admin-secret-code">👁️</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:20px">
+            <button type="submit" class="btn-resq-primary w-100" id="register-btn" style="padding:14px;font-size:1rem;justify-content:center">
+              📝 Create Account
+            </button>
+          </div>
+
+          <p style="font-size:0.78rem;color:var(--text-muted);text-align:center;margin-top:14px">
+            By registering, you agree to our Terms of Service and Privacy Policy.
+          </p>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  // Quick demo login — uses real API credentials seeded by /seed-demo-users
+  async function demoLogin(role) {
+    const creds = {
+      victim:    { email: 'user@demo.com',  password: 'demo123'  },
+      volunteer: { email: 'vol@demo.com',   password: 'demo123'  },
+      ngo:       { email: 'ngo@demo.com',   password: 'demo123'  },
+      admin:     { email: 'admin@demo.com', password: 'admin123' },
+    };
+    const c = creds[role];
+    if (!c) return;
+
+    Toast.show('🔄 Logging in as demo user...', 'info', 2000);
+
+    // Try real API
+    const data = await Api.post('/login', c);
+    if (data?.token && data?.user) {
+      Session.set(data.user, data.token);
+      Toast.show(`Demo login as ${data.user.name} 👋`, 'success');
+      setTimeout(() => Session.redirectIfLoggedIn(), 1000);
+      return;
+    }
+
+    // Fallback if server not seeded yet
+    Toast.show('⚠️ Demo user not in DB — run POST /seed-demo-users first', 'warning', 5000);
+  }
+
+  // Pre-fill tab from URL param
+  const params = new URLSearchParams(location.search);
+  if (params.get('tab') === 'register') {
+    document.addEventListener('DOMContentLoaded', () => switchTab('register'));
+  }
+</script>
+</body>
+</html>

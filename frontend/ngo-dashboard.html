@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ResQNet — NGO Dashboard</title>
+  <meta name="description" content="NGO relief management dashboard — manage inventory, allocate resources and coordinate disaster response on ResQNet.">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <style>
+    /* ── NGO-specific overrides ── */
+    :root { --ngo-color: #10B981; --ngo-color-dark: #059669; }
+
+    .ngo-header-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25);
+      border-radius: 20px; padding: 5px 14px; font-size: 0.8rem;
+      color: var(--ngo-color); font-weight: 600;
+    }
+
+    /* Inventory table row hover */
+    .resq-table tbody tr:hover { background: rgba(16,185,129,0.05); }
+
+    /* Resource card */
+    .resource-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--bg-card-2); border: 1px solid var(--border-glass);
+      border-radius: 20px; padding: 5px 14px; font-size: 0.8rem;
+      font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .resource-chip:hover,
+    .resource-chip.selected { background: rgba(16,185,129,0.15); border-color: var(--ngo-color); color: var(--ngo-color); }
+
+    /* Allocation panel */
+    .alloc-panel { background: var(--bg-glass); border: 1px solid rgba(16,185,129,0.2); border-radius: var(--radius-lg); padding: 20px; }
+    .alloc-panel h6 { color: var(--ngo-color); }
+
+    /* NGO stat card accent */
+    .stat-card.ngo { border-color: rgba(16,185,129,0.2); }
+    .stat-card.ngo .stat-icon { background: rgba(16,185,129,0.12); color: var(--ngo-color); }
+
+    /* Status dot */
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    .status-dot.pending  { background: #F59E0B; box-shadow: 0 0 5px #F59E0B; }
+    .status-dot.active   { background: #10B981; box-shadow: 0 0 5px #10B981; }
+    .status-dot.critical { background: #EF4444; box-shadow: 0 0 5px #EF4444; }
+
+    /* Map */
+    #ngo-map { height: 280px; border-radius: var(--radius); overflow: hidden; }
+
+    /* Add resource form */
+    .add-resource-form { display: none; background: var(--bg-card-2); border: 1px solid var(--border-glass); border-radius: var(--radius); padding: 16px; margin-top: 16px; }
+    .add-resource-form.open { display: block; }
+  </style>
+</head>
+<body class="dashboard-page">
+
+<!-- ── SIDEBAR ── -->
+<aside class="resq-sidebar" id="resq-sidebar">
+  <a href="index.html" class="sidebar-logo">
+    <div class="brand-icon">🚨</div>
+    <span class="brand-name">Res<span>Q</span>Net</span>
+  </a>
+  <nav class="sidebar-nav">
+    <div class="sidebar-section-title">NGO Operations</div>
+    <a href="ngo-dashboard.html" class="sidebar-nav-item active">
+      <span class="nav-icon">📊</span> Dashboard
+    </a>
+    <a href="#" class="sidebar-nav-item" onclick="scrollTo('requests-section')">
+      <span class="nav-icon">🆘</span> Active Requests
+    </a>
+    <a href="#" class="sidebar-nav-item" onclick="scrollTo('inventory-section')">
+      <span class="nav-icon">📦</span> Inventory
+    </a>
+    <a href="#" class="sidebar-nav-item" onclick="scrollTo('allocation-section')">
+      <span class="nav-icon">🔗</span> Allocate Resources
+    </a>
+    <a href="map.html" class="sidebar-nav-item">
+      <span class="nav-icon">🗺️</span> Live Map
+    </a>
+    <div class="sidebar-section-title" style="margin-top:12px">Account</div>
+    <a href="#" class="sidebar-nav-item" onclick="handleLogout(); return false;">
+      <span class="nav-icon">🚪</span> Logout
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="sidebar-avatar" id="sidebar-avatar" style="background:linear-gradient(135deg,#10B981,#059669)">N</div>
+      <div>
+        <div class="sidebar-user-name" id="sidebar-username">Loading...</div>
+        <div class="sidebar-user-role" id="sidebar-userrole">NGO / Organization</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<!-- ── MAIN CONTENT ── -->
+<main class="dashboard-content">
+
+  <!-- Header -->
+  <div class="dashboard-header">
+    <div>
+      <div class="dashboard-title">NGO Dashboard</div>
+      <div class="dashboard-subtitle" id="ngo-org-name">Relief Coordination & Resource Management</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="ngo-header-pill">🏢 <span id="header-org-name">NGO</span></span>
+      <div class="notif-wrapper" id="notif-wrapper">
+        <div class="notif-bell" id="notif-bell" onclick="toggleNotifDropdown()">
+          🔔
+          <div class="notif-badge" id="notif-badge">0</div>
+        </div>
+        <div class="notif-dropdown" id="notif-dropdown">
+          <div class="notif-header">
+            <div class="notif-header-title">🔔 Notifications</div>
+            <button class="notif-clear-btn" onclick="clearNotifications()">Mark all read</button>
+          </div>
+          <div class="notif-list" id="notif-list">
+            <div class="notif-empty">⏳ Loading...</div>
+          </div>
+          <div class="notif-footer">
+            <a href="#" onclick="closeNotifDropdown()">View all →</a>
+          </div>
+        </div>
+      </div>
+      <a href="map.html" class="btn-resq-primary" style="padding:10px 20px;font-size:0.875rem">🗺️ Live Map</a>
+    </div>
+  </div>
+
+  <!-- ── STATS GRID ── -->
+  <div class="stats-grid-4" style="margin-bottom:24px">
+    <div class="stat-card ngo">
+      <div class="stat-icon ngo">🆘</div>
+      <div>
+        <div class="stat-value" id="stat-active">0</div>
+        <div class="stat-label">Active Requests</div>
+        <div class="stat-change down">Needs attention</div>
+      </div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-icon warning">🚨</div>
+      <div>
+        <div class="stat-value" id="stat-urgent">0</div>
+        <div class="stat-label">High Priority</div>
+        <div class="stat-change down">Critical cases</div>
+      </div>
+    </div>
+    <div class="stat-card success">
+      <div class="stat-icon success">📦</div>
+      <div>
+        <div class="stat-value" id="stat-resources">0</div>
+        <div class="stat-label">Resources in Stock</div>
+        <div class="stat-change up">↑ Inventory</div>
+      </div>
+    </div>
+    <div class="stat-card info">
+      <div class="stat-icon info">🎯</div>
+      <div>
+        <div class="stat-value" id="stat-allocated">0</div>
+        <div class="stat-label">Resources Allocated</div>
+        <div class="stat-change up">↑ Deployed</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MAIN GRID ── -->
+  <div class="row g-4">
+
+    <!-- LEFT: Active Requests + Inventory -->
+    <div class="col-lg-8">
+
+      <!-- Active Help Requests -->
+      <div class="resq-card" id="requests-section" style="margin-bottom:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+          <div>
+            <div style="font-weight:700;font-size:1rem">🆘 Active Help Requests</div>
+            <div style="color:var(--text-muted);font-size:0.78rem;margin-top:2px">Real-time view of pending & in-progress requests</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <select class="resq-select" id="req-priority-filter" style="width:auto;min-width:120px">
+              <option value="">All Priorities</option>
+              <option value="High">🔴 High</option>
+              <option value="Medium">🟡 Medium</option>
+              <option value="Low">🟢 Low</option>
+            </select>
+            <select class="resq-select" id="req-type-filter" style="width:auto;min-width:120px">
+              <option value="">All Types</option>
+              <option value="Food">🍱 Food</option>
+              <option value="Water">💧 Water</option>
+              <option value="Medicine">💊 Medicine</option>
+              <option value="Rescue">🚁 Rescue</option>
+              <option value="Shelter">🏠 Shelter</option>
+            </select>
+            <button class="btn-resq-outline" style="padding:7px 14px;font-size:0.8rem" onclick="loadRequests()">🔄 Refresh</button>
+          </div>
+        </div>
+        <div class="resq-table-wrapper">
+          <table class="resq-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Name</th>
+                <th>People</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Time</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="requests-tbody">
+              <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted)">Loading active requests...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Relief Inventory -->
+      <div class="resq-card" id="inventory-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-weight:700;font-size:1rem">📦 Relief Inventory</div>
+            <div style="color:var(--text-muted);font-size:0.78rem;margin-top:2px">Manage your organization's relief resources</div>
+          </div>
+          <button class="btn-resq-primary" style="padding:9px 18px;font-size:0.85rem" onclick="toggleAddResourceForm()">
+            + Add Resource
+          </button>
+        </div>
+
+        <!-- Add Resource Form (hidden by default) -->
+        <div class="add-resource-form" id="add-resource-form">
+          <h6 style="font-weight:700;margin-bottom:14px;color:var(--ngo-color)">➕ Add New Resource</h6>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="resq-form-group" style="margin-bottom:0">
+                <label class="resq-label">Resource Name *</label>
+                <input type="text" class="resq-input" id="res-name" placeholder="e.g. Food Packets">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="resq-form-group" style="margin-bottom:0">
+                <label class="resq-label">Category</label>
+                <select class="resq-select" id="res-category">
+                  <option value="Food">🍱 Food</option>
+                  <option value="Water">💧 Water</option>
+                  <option value="Medicine">💊 Medicine</option>
+                  <option value="Rescue Equipment">🔧 Rescue Equipment</option>
+                  <option value="Shelter">🏠 Shelter</option>
+                  <option value="Clothing">👕 Clothing</option>
+                  <option value="Other">📦 Other</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="resq-form-group" style="margin-bottom:0">
+                <label class="resq-label">Quantity *</label>
+                <input type="number" class="resq-input" id="res-quantity" placeholder="500" min="1">
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="resq-form-group" style="margin-bottom:0">
+                <label class="resq-label">Unit</label>
+                <input type="text" class="resq-input" id="res-unit" placeholder="packets / litres / kits">
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="resq-form-group" style="margin-bottom:0">
+                <label class="resq-label">Location / Warehouse</label>
+                <input type="text" class="resq-input" id="res-location" placeholder="Kukatpally Warehouse">
+              </div>
+            </div>
+            <div class="col-12" style="display:flex;gap:10px;justify-content:flex-end">
+              <button class="btn-resq-secondary" style="padding:9px 18px;font-size:0.85rem" onclick="toggleAddResourceForm()">Cancel</button>
+              <button class="btn-resq-primary" style="padding:9px 18px;font-size:0.85rem" onclick="addResource()">✅ Add to Inventory</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inventory Table -->
+        <div class="resq-table-wrapper" style="margin-top:12px">
+          <table class="resq-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Quantity</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="inventory-tbody">
+              <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted)">No resources in inventory yet. Click "+ Add Resource" to get started.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: Map + Resource Allocation + Stats -->
+    <div class="col-lg-4">
+
+      <!-- Map -->
+      <div class="resq-card" style="padding:0;overflow:hidden;margin-bottom:20px">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border-glass)">
+          <div style="font-weight:700;font-size:0.9rem">📍 Active Request Map</div>
+          <div style="color:var(--text-muted);font-size:0.75rem">Live locations of pending help requests</div>
+        </div>
+        <div id="ngo-map"></div>
+      </div>
+
+      <!-- Resource Allocation Panel -->
+      <div class="resq-card" id="allocation-section" style="margin-bottom:20px">
+        <div style="font-weight:700;font-size:0.95rem;margin-bottom:4px">🔗 Allocate Resource</div>
+        <div style="color:var(--text-muted);font-size:0.78rem;margin-bottom:16px">Assign inventory items to active requests</div>
+
+        <div class="resq-form-group">
+          <label class="resq-label">Select Resource</label>
+          <select class="resq-select" id="alloc-resource">
+            <option value="">— Choose resource —</option>
+          </select>
+        </div>
+        <div class="resq-form-group">
+          <label class="resq-label">Select Help Request</label>
+          <select class="resq-select" id="alloc-request">
+            <option value="">— Choose request —</option>
+          </select>
+        </div>
+        <button class="btn-resq-primary w-100" style="padding:11px;justify-content:center" onclick="allocateResource()">
+          🔗 Allocate Resource
+        </button>
+
+        <!-- Allocation History -->
+        <div style="margin-top:16px" id="alloc-history">
+          <div style="font-weight:600;font-size:0.82rem;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Recent Allocations</div>
+          <div id="alloc-history-list" style="color:var(--text-muted);font-size:0.82rem;text-align:center;padding:12px">
+            No allocations yet
+          </div>
+        </div>
+      </div>
+
+      <!-- NGO Stats Summary -->
+      <div class="resq-card">
+        <div style="font-weight:700;font-size:0.95rem;margin-bottom:16px">📊 NGO Impact</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <div class="distribution-label"><span>Requests Covered</span><span id="ngo-coverage">0%</span></div>
+            <div class="distribution-track"><div class="distribution-fill" id="ngo-coverage-bar" style="background:var(--ngo-color);width:0%;transition:width 1s ease"></div></div>
+          </div>
+          <div>
+            <div class="distribution-label"><span>High Priority Handled</span><span id="ngo-high-pct">0%</span></div>
+            <div class="distribution-track"><div class="distribution-fill" id="ngo-high-bar" style="background:#EF4444;width:0%;transition:width 1s ease"></div></div>
+          </div>
+          <div>
+            <div class="distribution-label"><span>Resources Allocated</span><span id="ngo-alloc-pct">0%</span></div>
+            <div class="distribution-track"><div class="distribution-fill" id="ngo-alloc-bar" style="background:#3B82F6;width:0%;transition:width 1s ease"></div></div>
+          </div>
+        </div>
+
+        <!-- Disaster type breakdown from stats -->
+        <div style="margin-top:20px">
+          <div style="font-weight:600;font-size:0.82rem;color:var(--text-secondary);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em">Request Breakdown</div>
+          <div id="type-breakdown" style="display:flex;flex-direction:column;gap:8px">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Emergency Numbers -->
+      <div class="resq-card" style="margin-top:20px">
+        <h6 style="font-weight:700;margin-bottom:16px">📞 Emergency Contacts (India)</h6>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <a href="tel:112" style="display:flex;justify-content:space-between;padding:10px;background:rgba(239,68,68,0.08);border-radius:var(--radius);border:1px solid rgba(239,68,68,0.15);text-decoration:none;color:var(--text-primary);font-size:0.875rem">
+            <span>🚨 ERSS (All)</span><strong style="color:#EF4444">112</strong>
+          </a>
+          <a href="tel:100" style="display:flex;justify-content:space-between;padding:10px;background:rgba(59,130,246,0.08);border-radius:var(--radius);border:1px solid rgba(59,130,246,0.15);text-decoration:none;color:var(--text-primary);font-size:0.875rem">
+            <span>🚓 Police</span><strong style="color:#3B82F6">100</strong>
+          </a>
+          <a href="tel:101" style="display:flex;justify-content:space-between;padding:10px;background:rgba(245,158,11,0.08);border-radius:var(--radius);border:1px solid rgba(245,158,11,0.15);text-decoration:none;color:var(--text-primary);font-size:0.875rem">
+            <span>🚒 Fire</span><strong style="color:#F59E0B">101</strong>
+          </a>
+          <a href="tel:108" style="display:flex;justify-content:space-between;padding:10px;background:rgba(16,185,129,0.08);border-radius:var(--radius);border:1px solid rgba(16,185,129,0.15);text-decoration:none;color:var(--text-primary);font-size:0.875rem">
+            <span>🚑 Ambulance</span><strong style="color:#10B981">108</strong>
+          </a>
+          <a href="tel:1078" style="display:flex;justify-content:space-between;padding:10px;background:rgba(139,92,246,0.08);border-radius:var(--radius);border:1px solid rgba(139,92,246,0.15);text-decoration:none;color:var(--text-primary);font-size:0.875rem">
+            <span>🏛️ Disaster Mgmt</span><strong style="color:#8B5CF6">1078</strong>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<button class="sidebar-toggle" id="sidebar-toggle-btn">☰</button>
+<div id="toast-container"></div>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY_HERE&callback=initMap&v=weekly&libraries=marker" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+<script src="js/ngo-dashboard.js"></script>
+<script>
+  function scrollTo(id) {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
