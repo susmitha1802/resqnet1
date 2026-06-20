@@ -1,10 +1,12 @@
 /**
  * ResQNet — Disaster Report Form Logic
+ * Uses Leaflet click-to-pick + Nominatim reverse geocoding (no API key).
  */
 
 let selectedDisasterType = null;
 let uploadedFiles = [];
 let userLocation = null;
+let pickerMap = null;
 
 /* ── Disaster Type Selection ── */
 function selectDisasterType(type) {
@@ -30,10 +32,44 @@ function selectDisasterType(type) {
   }
 }
 
-/* ── Get Location ── */
+/* ── Set Location Fields ── */
+function setLocationFields(lat, lng, address) {
+  userLocation = { lat, lng };
+  document.getElementById('lat-input').value = lat.toFixed(6);
+  document.getElementById('lng-input').value = lng.toFixed(6);
+
+  const locInput  = document.getElementById('location-input');
+  const locStatus = document.getElementById('location-status');
+  if (locInput)  locInput.value = address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  if (locStatus) locStatus.textContent = `✅ Location set: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+}
+
+/* ── Init Leaflet Location Picker ── */
+function initLocationPicker() {
+  if (!document.getElementById('location-picker-map')) return;
+  if (typeof ResQMap === 'undefined') {
+    console.warn('ResQMap not loaded yet — will retry');
+    setTimeout(initLocationPicker, 300);
+    return;
+  }
+
+  pickerMap = ResQMap.createMap('location-picker-map', { lat: 17.4401, lng: 78.4487, zoom: 12 });
+
+  // Click-to-pick
+  ResQMap.enableLocationPicker(pickerMap, async (lat, lng, address) => {
+    setLocationFields(lat, lng, address);
+    Toast.show(`📍 Location selected: ${address}`, 'success');
+  });
+
+  // Address search
+  ResQMap.attachSearchBar(pickerMap, 'loc-search-input', 'loc-search-results', (lat, lng, name) => {
+    setLocationFields(lat, lng, name);
+  });
+}
+
+/* ── GPS Detect Button ── */
 function getLocation() {
   const btn = document.getElementById('get-location-btn');
-  const locInput = document.getElementById('location-input');
   const locStatus = document.getElementById('location-status');
 
   if (!navigator.geolocation) {
@@ -46,25 +82,24 @@ function getLocation() {
   if (locStatus) locStatus.textContent = 'Detecting your location...';
 
   navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      document.getElementById('lat-input').value = userLocation.lat.toFixed(6);
-      document.getElementById('lng-input').value = userLocation.lng.toFixed(6);
-      if (locInput) locInput.value = `${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`;
-      if (locStatus) locStatus.textContent = `✅ Location captured: ${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`;
+    async (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      if (pickerMap) pickerMap.setView([lat, lng], 15);
+
+      // Reverse geocode via Nominatim
+      const address = await ResQMap.reverseGeocode(lat, lng);
+      setLocationFields(lat, lng, address);
+
       btn.innerHTML = '✅ Location Captured';
       btn.style.background = 'var(--grad-success)';
       Toast.show('Location captured successfully!', 'success');
     },
     () => {
-      // Fallback demo location
-      userLocation = { lat: 17.3850, lng: 78.4867 };
-      document.getElementById('lat-input').value = userLocation.lat;
-      document.getElementById('lng-input').value = userLocation.lng;
-      if (locInput) locInput.value = 'Hyderabad, Telangana (demo)';
-      if (locStatus) locStatus.textContent = '⚠️ Using demo location (Hyderabad)';
-      btn.innerHTML = '⚠️ Demo Location';
-      Toast.show('Using demo location for preview', 'warning');
+      btn.innerHTML = '❌ Location Failed';
+      btn.disabled = false;
+      if (locStatus) locStatus.textContent = 'Please pick a location manually on the map.';
+      Toast.show('Could not access location. Please click on the map to set location.', 'error');
     }
   );
 }
@@ -124,7 +159,7 @@ async function handleReportSubmit(e) {
   if (!selectedDisasterType) { Toast.show('Please select a disaster type', 'warning'); return; }
   const desc = document.getElementById('report-description').value.trim();
   if (!desc) { Toast.show('Please provide a description', 'warning'); return; }
-  if (!userLocation) { Toast.show('Please capture your location', 'warning'); return; }
+  if (!userLocation) { Toast.show('Please select your location on the map or click "Detect My Location"', 'warning'); return; }
 
   const btn = document.getElementById('submit-btn');
   btn.disabled = true;
@@ -143,6 +178,11 @@ async function handleReportSubmit(e) {
   document.getElementById('report-form').style.display = 'none';
   document.getElementById('success-state').style.display = 'flex';
 
+  const mapLink = document.getElementById('success-map-link');
+  if (mapLink && data?.report?.report_id) {
+    mapLink.href = `map.html?report_id=${data.report.report_id}`;
+  }
+
   Toast.show('Disaster report submitted successfully! 🚨', 'success');
 }
 
@@ -157,4 +197,5 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('get-location-btn')?.addEventListener('click', getLocation);
   document.getElementById('report-form')?.addEventListener('submit', handleReportSubmit);
   initFileUpload();
+  initLocationPicker();
 });

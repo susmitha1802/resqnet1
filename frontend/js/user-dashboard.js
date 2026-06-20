@@ -77,6 +77,61 @@ function renderRequestTable(requests) {
   `).join('');
 }
 
+/* ── Render Timeline ── */
+function renderTimeline(requests) {
+  const container = document.getElementById('timeline-container');
+  if (!container) return;
+
+  if (!requests.length) {
+    container.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:20px">No requests to track.</div>`;
+    return;
+  }
+
+  const steps = ['Pending', 'Accepted', 'In Progress', 'Completed'];
+
+  container.innerHTML = requests.map(r => {
+    let currentStep = 0;
+    if (r.status === 'Accepted') currentStep = 1;
+    if (r.status === 'En Route' || r.status === 'On Site') currentStep = 2;
+    if (r.status === 'Completed' || r.status === 'Duplicate') currentStep = 3;
+
+    const timelineHtml = steps.map((step, idx) => {
+      const isPast = idx < currentStep;
+      const isCurrent = idx === currentStep;
+      const color = isPast || isCurrent ? 'var(--primary)' : 'var(--bg-glass)';
+      const textCol = isPast || isCurrent ? 'var(--text-primary)' : 'var(--text-muted)';
+      const fw = isCurrent ? '700' : '500';
+      return `
+        <div style="flex:1;text-align:center;position:relative">
+          <div style="height:4px;background:${color};margin-bottom:8px;border-radius:2px;box-shadow: ${isCurrent ? '0 0 10px var(--primary)' : 'none'}"></div>
+          <div style="font-size:0.75rem;color:${textCol};font-weight:${fw}">${step}</div>
+        </div>
+      `;
+    }).join('');
+
+    const assignedTo = r.assigned_volunteer ? `🧑‍🤝‍🧑 Assigned to: <strong>${r.assigned_volunteer}</strong>` : `⏳ Waiting for volunteer`;
+    
+    return `
+      <div style="border:1px solid var(--border-glass);border-radius:var(--radius);padding:16px;background:var(--bg-card-2);cursor:pointer;transition:var(--transition);" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border-glass)'" onclick="showAIResult(${r.request_id})">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+          <div>
+            <div style="font-weight:700;font-size:1.05rem;display:flex;align-items:center;gap:8px">
+              ${r.request_type} Request <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400;font-family:monospace">#${r.request_id}</span>
+            </div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">
+              Last updated: ${timeAgo(r.updated_at || r.created_at)} • ${assignedTo}
+            </div>
+          </div>
+          ${statusBadge(r.status)}
+        </div>
+        <div style="display:flex;gap:4px">
+          ${timelineHtml}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 /* ── Show AI Result Panel ── */
 function showAIResult(requestId) {
   const req = currentRequests.find(r => r.request_id === requestId);
@@ -147,6 +202,7 @@ function initFilters() {
     if (type)   filtered = filtered.filter(r => r.request_type === type);
 
     renderRequestTable(filtered);
+    renderTimeline(filtered);
   };
 
   searchInput?.addEventListener('input', applyFilters);
@@ -157,23 +213,53 @@ function initFilters() {
 /* ── Fetch from real API ── */
 async function loadRequests() {
   const data = await Api.get('/help-requests');
-  if (data?.requests && data.requests.length > 0) {
-    currentRequests = data.requests;
-  } else {
-    console.log("No data from API, injecting realistic demo data for User Dashboard");
-    currentRequests = [
-      { request_id: 101, request_type: 'Rescue', priority_level: 'High', status: 'Pending', severity: 'Severe Damage', created_at: new Date(Date.now() - 1800000).toISOString(), number_of_people: 5, description: 'Trapped in flooded house', is_duplicate: false },
-      { request_id: 102, request_type: 'Medicine', priority_level: 'Medium', status: 'Accepted', severity: 'Moderate Damage', created_at: new Date(Date.now() - 7200000).toISOString(), number_of_people: 2, description: 'Urgent insulin needed', is_duplicate: false },
-      { request_id: 103, request_type: 'Food', priority_level: 'Low', status: 'Completed', severity: 'Low Damage', created_at: new Date(Date.now() - 86400000).toISOString(), number_of_people: 15, description: 'Food packets for community', is_duplicate: false }
-    ];
-  }
+  currentRequests = data?.requests || [];
+
   updateStats();
   renderRequestTable(currentRequests);
+  renderTimeline(currentRequests);
 
   // Show AI panel for the first request if any
   if (currentRequests.length > 0) {
     setTimeout(() => showAIResult(currentRequests[0].request_id), 600);
+  } else {
+    const panel = document.getElementById('ai-result-panel');
+    if (panel) panel.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">No requests to analyze</div>';
   }
+}
+
+/* ── Fetch Disaster Reports ── */
+async function loadDisasters() {
+  const data = await Api.get('/reports');
+  const user = Session.get();
+  if (!user) return;
+
+  const myReports = (data.reports || []).filter(r => r.user_id === user.user_id);
+  const tbody = document.getElementById('disasters-tbody');
+  
+  if (!tbody) return;
+
+  if (myReports.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)">You have not reported any disasters.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = myReports.map(r => `
+    <tr>
+      <td style="font-weight:600">🔥 ${r.disaster_type}</td>
+      <td>
+        <span class="priority-badge" style="
+          background:${r.severity.includes('Severe') ? 'rgba(239,68,68,0.2)' : (r.severity.includes('Moderate') ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.2)')};
+          color:${r.severity.includes('Severe') ? '#EF4444' : (r.severity.includes('Moderate') ? '#F59E0B' : '#10B981')}
+        ">${r.severity}</span>
+      </td>
+      <td style="color:var(--text-secondary)">📍 ${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}</td>
+      <td style="color:var(--text-secondary)">${timeAgo(r.created_at)}</td>
+      <td>
+        <a href="map.html?report_id=${r.report_id}" class="btn-resq-outline" style="padding:5px 12px;font-size:0.75rem">🗺️ View On Map</a>
+      </td>
+    </tr>
+  `).join('');
 }
 
 /* ── Init ── */
@@ -182,6 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!Session.requireRole('victim')) return;
   populateUserInfo();
   loadRequests();
+  loadDisasters();
   initFilters();
 });
 

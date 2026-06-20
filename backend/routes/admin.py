@@ -170,3 +170,44 @@ def admin_users():
         'users': [u.to_dict() for u in users],
         'total': len(users),
     })
+
+
+# ── GET /admin/pending-verifications ───────────────────────────────────────────
+@admin_bp.route('/admin/pending-verifications', methods=['GET'])
+@require_role('admin')
+def pending_verifications():
+    tasks = ReliefTask.query.filter_by(verification_status='Pending', status='Proof Submitted').all()
+    return _success({'verifications': [t.to_dict() for t in tasks]})
+
+
+# ── PUT /admin/verify-task/<task_id> ───────────────────────────────────────────
+@admin_bp.route('/admin/verify-task/<int:task_id>', methods=['PUT'])
+@require_role('admin')
+def verify_task(task_id):
+    from datetime import datetime, timezone
+    uid  = int(get_jwt_identity())
+    data = request.get_json(silent=True) or {}
+    action = data.get('action') # 'Approve' or 'Reject'
+
+    task = ReliefTask.query.get_or_404(task_id)
+
+    if task.verification_status != 'Pending':
+        return _error('Task is not pending verification')
+
+    if action == 'Approve':
+        task.verification_status = 'Approved'
+        task.verified_by_admin_id = uid
+        task.status = 'Completed'
+        task.completed_at = datetime.now(timezone.utc)
+        task.request.status = 'Completed'
+        task.volunteer.completed_tasks += 1
+        task.volunteer.availability_status = 'available'
+    elif action == 'Reject':
+        task.verification_status = 'Rejected'
+        task.verified_by_admin_id = uid
+        task.status = 'Assigned' # Revert to assigned so they can try again
+    else:
+        return _error('Invalid action')
+
+    db.session.commit()
+    return _success({'task': task.to_dict()}, f'Task {action.lower()}d successfully')

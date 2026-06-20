@@ -200,7 +200,7 @@
   </div>
 
   <!-- Extra KPIs -->
-  <div class="stats-grid-2" style="margin-bottom:24px">
+  <div class="stats-grid-2" style="margin-bottom:24px; display:grid; grid-template-columns: repeat(3, 1fr); gap:16px;">
     <div class="stat-card info">
       <div class="stat-icon info">⏳</div>
       <div>
@@ -215,6 +215,14 @@
         <div class="stat-value" id="stat-reports">0</div>
         <div class="stat-label">Disaster Reports</div>
         <div class="stat-change up" id="stat-change-reports"></div>
+      </div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-icon warning">📬</div>
+      <div>
+        <div class="stat-value" id="stat-support-messages">0</div>
+        <div class="stat-label">Support Messages</div>
+        <div class="stat-change up" id="stat-change-support-messages"></div>
       </div>
     </div>
   </div>
@@ -329,6 +337,89 @@
           </a>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ── DISASTER REPORTS TABLE ── -->
+  <div class="resq-card" style="margin-bottom:24px" id="disasters-section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <div style="font-weight:700;font-size:1rem">📢 Recent Disaster Reports</div>
+        <div style="color:var(--text-muted);font-size:0.78rem;margin-top:2px">Disasters submitted by users</div>
+      </div>
+    </div>
+    <div class="resq-table-wrapper">
+      <table class="resq-table">
+        <thead>
+          <tr>
+            <th>Report ID</th>
+            <th>Reporter</th>
+            <th>Type</th>
+            <th>Severity</th>
+            <th>Location</th>
+            <th>Time</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="disasters-tbody">
+          <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted)">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── VERIFICATION QUEUE ── -->
+  <div class="resq-card" style="margin-bottom:24px" id="verification-section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <div style="font-weight:700;font-size:1rem">🛡️ Verification Queue</div>
+        <div style="color:var(--text-muted);font-size:0.78rem;margin-top:2px">Review volunteer proof submissions</div>
+      </div>
+    </div>
+    <div class="resq-table-wrapper">
+      <table class="resq-table">
+        <thead>
+          <tr>
+            <th>Task ID</th>
+            <th>Volunteer</th>
+            <th>Notes</th>
+            <th>Proof Image</th>
+            <th>AI Verification</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="verifications-tbody">
+          <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted)">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── SUPPORT MESSAGES TABLE ── -->
+  <div class="resq-card" style="margin-bottom:24px" id="support-messages-section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <div style="font-weight:700;font-size:1rem">📬 Recent Support Messages</div>
+        <div style="color:var(--text-muted);font-size:0.78rem;margin-top:2px">Messages submitted via Contact Us</div>
+      </div>
+    </div>
+    <div class="resq-table-wrapper">
+      <table class="resq-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Subject</th>
+            <th>Message</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="support-messages-tbody">
+          <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted)">Loading...</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 

@@ -20,16 +20,17 @@ def forecast_resources(
         duration_days     — Estimated days of support needed
         summary           — Human-readable summary string
     """
-    p          = max(1, int(number_of_people))
+    p          = max(1, number_of_people)
     multiplier = 1.5 if priority_level == 'High' else 1.0
 
-    forecast = {
+    forecast: dict = {
         'food_packets':      0,
         'water_litres':      0,
         'medical_kits':      0,
         'rescue_personnel':  0,
         'shelter_units':     0,
         'duration_days':     3,
+        'summary':           '',
     }
 
     if request_type == 'Food':

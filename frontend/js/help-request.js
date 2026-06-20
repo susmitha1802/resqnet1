@@ -1,10 +1,12 @@
 /**
  * ResQNet — Help Request Form Logic
+ * Uses Leaflet click-to-pick + Nominatim reverse geocoding (no API key).
  */
 
 let uploadedImage = null;
 let userLocation = null;
 let aiPreviewShown = false;
+let pickerMap = null;
 
 /* ── AI Priority Preview ── */
 function computeAIPriority(requestType, people) {
@@ -43,7 +45,36 @@ function updateAIPreview() {
   document.getElementById('ai-medical-forecast').textContent = `${medKits} first-aid kits`;
 }
 
-/* ── Get Location ── */
+/* ── Set Location Fields ── */
+function setLocationFields(lat, lng, address) {
+  userLocation = { lat, lng };
+  document.getElementById('lat-input').value = lat.toFixed(6);
+  document.getElementById('lng-input').value = lng.toFixed(6);
+  const display = document.getElementById('location-display');
+  if (display) display.textContent = `📍 ${address || lat.toFixed(4) + ', ' + lng.toFixed(4)}`;
+}
+
+/* ── Init Leaflet Location Picker ── */
+function initLocationPicker() {
+  if (!document.getElementById('location-picker-map')) return;
+  if (typeof ResQMap === 'undefined') {
+    setTimeout(initLocationPicker, 300);
+    return;
+  }
+
+  pickerMap = ResQMap.createMap('location-picker-map', { lat: 17.4401, lng: 78.4487, zoom: 12 });
+
+  ResQMap.enableLocationPicker(pickerMap, async (lat, lng, address) => {
+    setLocationFields(lat, lng, address);
+    Toast.show(`📍 Location selected: ${address}`, 'success');
+  });
+
+  ResQMap.attachSearchBar(pickerMap, 'loc-search-input', 'loc-search-results', (lat, lng, name) => {
+    setLocationFields(lat, lng, name);
+  });
+}
+
+/* ── GPS Detect ── */
 function getLocation() {
   const btn = document.getElementById('get-location-btn');
   if (!navigator.geolocation) { Toast.show('Geolocation not supported', 'warning'); return; }
@@ -52,22 +83,22 @@ function getLocation() {
   btn.innerHTML = '⏳ Getting...';
 
   navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      document.getElementById('lat-input').value = userLocation.lat.toFixed(6);
-      document.getElementById('lng-input').value = userLocation.lng.toFixed(6);
-      document.getElementById('location-display').textContent = `📍 ${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`;
+    async (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      if (pickerMap) pickerMap.setView([lat, lng], 15);
+
+      const address = await ResQMap.reverseGeocode(lat, lng);
+      setLocationFields(lat, lng, address);
+
       btn.innerHTML = '✅ Captured';
       btn.style.background = 'var(--grad-success)';
       Toast.show('Location captured!', 'success');
     },
     () => {
-      userLocation = { lat: 17.3850, lng: 78.4867 };
-      document.getElementById('lat-input').value = userLocation.lat;
-      document.getElementById('lng-input').value = userLocation.lng;
-      document.getElementById('location-display').textContent = '📍 Hyderabad, Telangana (demo)';
-      btn.innerHTML = '⚠️ Demo';
-      Toast.show('Using demo location', 'warning');
+      btn.innerHTML = '❌ Failed';
+      btn.disabled = false;
+      Toast.show('Could not access location. Please click on the map to set location.', 'error');
     }
   );
 }
@@ -125,7 +156,7 @@ async function handleHelpRequest(e) {
   const desc    = document.getElementById('req-description').value.trim();
 
   if (!name || !contact || !type || !people) { Toast.show('Please fill in all required fields', 'warning'); return; }
-  if (!userLocation) { Toast.show('Please capture your location', 'warning'); return; }
+  if (!userLocation) { Toast.show('Please select your location on the map or click "Detect Location"', 'warning'); return; }
 
   const { level } = computeAIPriority(type, people);
   const btn = document.getElementById('submit-btn');
@@ -143,12 +174,17 @@ async function handleHelpRequest(e) {
   formData.append('priority_level', level);
   if (uploadedImage) formData.append('image', uploadedImage);
 
-  await Api.postForm('/help-request', formData);
+  const res = await Api.postForm('/help-request', formData);
 
   document.getElementById('help-form').style.display = 'none';
   document.getElementById('success-state').style.display = 'flex';
   document.getElementById('success-priority').textContent = level;
   document.getElementById('success-priority').className = `badge-${level.toLowerCase()}`;
+
+  const mapLink = document.getElementById('success-map-link');
+  if (mapLink && res?.request?.request_id) {
+    mapLink.href = `map.html?request_id=${res.request.request_id}`;
+  }
 
   Toast.show(`Help request submitted! Priority: ${level} 🚨`, level === 'High' ? 'danger' : 'success');
 }
@@ -162,4 +198,5 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('get-location-btn')?.addEventListener('click', getLocation);
   document.getElementById('help-form')?.addEventListener('submit', handleHelpRequest);
   initImageUpload();
+  initLocationPicker();
 });

@@ -3,7 +3,7 @@ ResQNet — Damage Severity Classification
 """
 
 
-def classify_severity(image_path: str = None, disaster_type: str = None) -> str:
+def classify_severity(image_path: str | None = None, disaster_type: str | None = None) -> str:
     """
     Classifies structural damage severity from an uploaded image.
 

@@ -12,7 +12,7 @@ def predict_priority(request_type: str, number_of_people: int) -> str:
         'Medium' — Food / Water shortages
         'Low'    — Shelter or general assistance
     """
-    if request_type in ('Rescue', 'Medicine') or int(number_of_people) > 10:
+    if request_type in ('Rescue', 'Medicine') or number_of_people > 10:
         return 'High'
     elif request_type in ('Food', 'Water'):
         return 'Medium'

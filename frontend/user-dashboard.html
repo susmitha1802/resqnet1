@@ -172,6 +172,43 @@
         </div>
       </div>
 
+      <!-- My Requests Timeline -->
+      <div class="resq-card" style="padding:0;overflow:hidden;margin-bottom:24px">
+        <div style="padding:20px 24px;border-bottom:1px solid var(--border-glass)">
+          <h6 style="font-weight:700;margin:0">⏳ My Requests Timeline</h6>
+          <p style="color:var(--text-muted);font-size:0.82rem;margin:4px 0 0">Live progress of your submitted requests</p>
+        </div>
+        <div id="timeline-container" style="padding:24px;display:flex;flex-direction:column;gap:24px">
+          <div style="text-align:center;padding:30px;color:var(--text-muted)">Loading timeline...</div>
+        </div>
+      </div>
+
+
+
+      <!-- My Disaster Reports -->
+      <div class="resq-card" style="padding:0;overflow:hidden;margin-bottom:24px">
+        <div style="padding:20px 24px;border-bottom:1px solid var(--border-glass)">
+          <h6 style="font-weight:700;margin:0">📢 My Disaster Reports</h6>
+          <p style="color:var(--text-muted);font-size:0.82rem;margin:4px 0 0">Disasters you have reported to the network</p>
+        </div>
+        <div class="resq-table-wrapper">
+          <table class="resq-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Severity</th>
+                <th>Location</th>
+                <th>Submitted</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="disasters-tbody">
+              <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- AI Results Panel -->
       <div class="resq-card" style="padding:0;overflow:hidden" id="profile-section">
         <div style="padding:20px 24px;border-bottom:1px solid var(--border-glass);display:flex;align-items:center;justify-content:space-between">

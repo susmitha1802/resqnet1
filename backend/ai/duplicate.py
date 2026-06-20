@@ -2,7 +2,7 @@
 ResQNet — Duplicate Request Detection
 """
 import math
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 def haversine(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
@@ -31,7 +31,7 @@ def detect_duplicate(
       - Within location_radius_km distance
       - Submitted within the last time_window_minutes minutes
     """
-    cutoff = datetime.utcnow() - timedelta(minutes=time_window_minutes)
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=time_window_minutes)
     new_lat  = float(new_request['latitude'])
     new_lng  = float(new_request['longitude'])
     new_type = new_request['request_type']

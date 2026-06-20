@@ -33,8 +33,7 @@
     .ngo-extras { display: none; margin-top: 16px; }
     .ngo-extras.visible { display: block; }
 
-    .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    @media (max-width: 480px) { .role-selector { grid-template-columns: 1fr 1fr; } .demo-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 480px) { .role-selector { grid-template-columns: 1fr 1fr; } }
   </style>
 </head>
 <body>
@@ -129,20 +128,6 @@
           </button>
         </form>
 
-        <div class="form-divider">or try demo accounts</div>
-        <div class="demo-grid">
-          <button class="btn-resq-secondary" onclick="demoLogin('victim')">🆘 Victim Demo</button>
-          <button class="btn-resq-secondary" onclick="demoLogin('volunteer')">🤝 Volunteer Demo</button>
-          <button class="btn-resq-secondary" onclick="demoLogin('ngo')">🏢 NGO Demo</button>
-          <button class="btn-resq-secondary" onclick="demoLogin('admin')">🛡️ Admin Demo</button>
-        </div>
-
-        <!-- Demo credentials hint -->
-        <div class="resq-alert info" style="margin-top:16px;font-size:0.78rem">
-          ℹ️ <strong>Demo credentials:</strong><br>
-          user@demo.com / vol@demo.com / ngo@demo.com — password: <code>demo123</code><br>
-          admin@demo.com — password: <code>admin123</code>
-        </div>
       </div>
 
       <!-- ── REGISTER FORM ── -->
@@ -328,32 +313,6 @@
 <script src="js/main.js"></script>
 <script src="js/auth.js"></script>
 <script>
-  // Quick demo login — uses real API credentials seeded by /seed-demo-users
-  async function demoLogin(role) {
-    const creds = {
-      victim:    { email: 'user@demo.com',  password: 'demo123'  },
-      volunteer: { email: 'vol@demo.com',   password: 'demo123'  },
-      ngo:       { email: 'ngo@demo.com',   password: 'demo123'  },
-      admin:     { email: 'admin@demo.com', password: 'admin123' },
-    };
-    const c = creds[role];
-    if (!c) return;
-
-    Toast.show('🔄 Logging in as demo user...', 'info', 2000);
-
-    // Try real API
-    const data = await Api.post('/login', c);
-    if (data?.token && data?.user) {
-      Session.set(data.user, data.token);
-      Toast.show(`Demo login as ${data.user.name} 👋`, 'success');
-      setTimeout(() => Session.redirectIfLoggedIn(), 1000);
-      return;
-    }
-
-    // Fallback if server not seeded yet
-    Toast.show('⚠️ Demo user not in DB — run POST /seed-demo-users first', 'warning', 5000);
-  }
-
   // Pre-fill tab from URL param
   const params = new URLSearchParams(location.search);
   if (params.get('tab') === 'register') {

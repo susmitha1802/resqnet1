@@ -63,6 +63,20 @@ const Api = {
     }
   },
 
+  /** DELETE request */
+  async delete(endpoint) {
+    try {
+      const res = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'DELETE',
+        headers: this.headers()
+      });
+      return await res.json();
+    } catch (err) {
+      console.warn(`[API] DELETE ${endpoint} failed (offline?):`, err.message);
+      return null;
+    }
+  },
+
   /** POST with FormData (file upload) */
   async postForm(endpoint, formData) {
     try {

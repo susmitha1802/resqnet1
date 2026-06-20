@@ -5,6 +5,7 @@ from .help_requests import help_bp
 from .volunteers    import volunteers_bp
 from .admin         import admin_bp
 from .ngo           import ngo_bp
+from .contact       import contact_bp
 
 __all__ = [
     'auth_bp',
@@ -13,4 +14,5 @@ __all__ = [
     'volunteers_bp',
     'admin_bp',
     'ngo_bp',
+    'contact_bp',
 ]

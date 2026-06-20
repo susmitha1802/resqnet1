@@ -67,8 +67,8 @@ def report_disaster():
         description   = description,
         image_path    = img_path,
         severity      = severity,
-        latitude      = float(latitude),
-        longitude     = float(longitude),
+        latitude      = float(latitude),  # type: ignore
+        longitude     = float(longitude), # type: ignore
     )
     db.session.add(report)
     db.session.commit()

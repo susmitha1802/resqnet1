@@ -6,7 +6,7 @@ POST /ngo/resources   — add a relief resource
 GET  /ngo/requests    — all active help requests (NGO read-only view)
 PUT  /ngo/allocate    — allocate a resource to a help request
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt_identity
 
@@ -74,7 +74,7 @@ def ngo_dashboard():
     return _success({
         'stats':        stats,
         'recent_urgent': [r.to_dict() for r in recent_urgent],
-        'ngo_name':     user.location or user.name,  # location stores org name
+        'ngo_name':     (user.location or user.name) if user else 'Unknown NGO',
     })
 
 
@@ -150,7 +150,7 @@ def add_ngo_resource():
         'location':     location,
         'allocated_to': None,
         'added_by':     uid,
-        'added_at':     datetime.utcnow().isoformat(),
+        'added_at':     datetime.now(timezone.utc).isoformat(),
     }
     _resources[rid] = resource
 
@@ -241,7 +241,7 @@ def ngo_allocate_resource():
         return _error(f'Help request {request_id} not found', 404)
 
     resource['allocated_to'] = request_id
-    resource['allocated_at'] = datetime.utcnow().isoformat()
+    resource['allocated_at'] = datetime.now(timezone.utc).isoformat()
 
     return _success({
         'resource': resource,

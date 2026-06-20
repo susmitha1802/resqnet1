@@ -11,11 +11,12 @@ Architecture:
 import os
 from flask import Flask, jsonify
 from flask_cors import CORS
+from flask_jwt_extended import jwt_required
 from flasgger import Swagger  # type: ignore[import-untyped]
 
 from config import Config
 from extensions import db, jwt
-from routes import auth_bp, reports_bp, help_bp, volunteers_bp, admin_bp, ngo_bp
+from routes import auth_bp, reports_bp, help_bp, volunteers_bp, admin_bp, ngo_bp, contact_bp
 
 
 # ── Swagger / OpenAPI config ───────────────────────────────────────────────────
@@ -390,6 +391,7 @@ def create_app(config_class=Config) -> Flask:
     app.register_blueprint(volunteers_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(ngo_bp)
+    app.register_blueprint(contact_bp)
 
     # ── Create Tables ─────────────────────────────────────────────────────────
     with app.app_context():
@@ -425,6 +427,57 @@ def create_app(config_class=Config) -> Flask:
             'reports':    [r.to_dict() for r in reports],
             'volunteers': [v.to_dict() for v in volunteers],
         })
+
+    @app.route('/public/stats', methods=['GET'])
+    def public_stats():
+        """Public homepage statistics."""
+        from models import HelpRequest, Volunteer, ReliefTask
+        
+        # Requests Handled = total completed tasks
+        tasks_handled = ReliefTask.query.filter_by(status='Completed').count()
+        
+        # Active Volunteers = currently available
+        active_vols = Volunteer.query.filter_by(availability_status='available').count()
+        
+        # Completed = total resolved requests
+        completed_reqs = HelpRequest.query.filter_by(status='Completed').count()
+        
+        # Fallback if tasks_handled is 0 but there are completed requests
+        requests_handled = max(tasks_handled, completed_reqs)
+        
+        return jsonify({
+            'success': True,
+            'stats': {
+                'total_requests': requests_handled,
+                'active_volunteers': active_vols,
+                'completed': completed_reqs
+            }
+        })
+
+    @app.route('/uploads/task_proofs/<filename>', methods=['GET'])
+    @jwt_required()
+    def serve_proof(filename):
+        from models import ReliefTask, User, Volunteer
+        import os
+        from flask import send_from_directory
+        
+        uid = int(get_jwt_identity())
+        user = User.query.get(uid)
+        if not user:
+            return jsonify({'success': False, 'message': 'Access denied'}), 403
+            
+        if user.role == 'admin':
+            return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER'], 'task_proofs'), filename)
+            
+        if user.role == 'volunteer':
+            vol = Volunteer.query.filter_by(user_id=uid).first()
+            if vol:
+                img_path = f"/uploads/task_proofs/{filename}"
+                task = ReliefTask.query.filter_by(proof_image_path=img_path, volunteer_id=vol.volunteer_id).first()
+                if task:
+                    return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER'], 'task_proofs'), filename)
+                    
+        return jsonify({'success': False, 'message': 'Access denied'}), 403
 
     # ── JWT Error Handlers ────────────────────────────────────────────────────
 

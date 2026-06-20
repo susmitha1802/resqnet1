@@ -5,13 +5,16 @@ PUT /volunteer/accept-task     — accept a pending request (volunteer only)
 PUT /volunteer/update-status   — update availability (volunteer only)
 PUT /volunteer/complete-task   — complete an active task (volunteer only)
 """
-from datetime import datetime
-from flask import Blueprint, request, jsonify
+from datetime import datetime, timezone
+import os
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import get_jwt_identity
+from werkzeug.utils import secure_filename
 
 from extensions import db
 from models import HelpRequest, Volunteer, ReliefTask
 from routes.middleware import require_role
+from ai.task_verification import verify_task_evidence
 
 volunteers_bp = Blueprint('volunteers', __name__)
 
@@ -22,6 +25,17 @@ def _success(data=None, message='OK', status=200):
 
 def _error(message='Error', status=400):
     return jsonify({'success': False, 'message': message}), status
+
+def _save_file(file_obj, subfolder: str) -> str | None:
+    """Save an uploaded file and return its path, or None on failure."""
+    if not file_obj or not file_obj.filename:
+        return None
+    filename = secure_filename(file_obj.filename)
+    folder   = os.path.join(current_app.config['UPLOAD_FOLDER'], subfolder)
+    os.makedirs(folder, exist_ok=True)
+    path     = os.path.join(folder, filename)
+    file_obj.save(path)
+    return f"/{current_app.config['UPLOAD_FOLDER']}/{subfolder}/{filename}".replace('\\', '/')
 
 
 def _get_volunteer(uid: int) -> Volunteer | None:
@@ -102,13 +116,35 @@ def update_volunteer_status():
     return _success({'volunteer': vol.to_dict()}, 'Availability updated')
 
 
-# ── PUT /volunteer/complete-task ───────────────────────────────────────────────
-@volunteers_bp.route('/volunteer/complete-task', methods=['PUT'])
+# ── PUT /volunteer/update-location ─────────────────────────────────────────────
+@volunteers_bp.route('/volunteer/update-location', methods=['PUT'])
 @require_role('volunteer')
-def complete_task():
+def update_volunteer_location():
     uid  = int(get_jwt_identity())
     data = request.get_json(silent=True) or {}
-    task_id = data.get('task_id')
+    lat  = data.get('latitude')
+    lng  = data.get('longitude')
+
+    if lat is None or lng is None:
+        return _error('latitude and longitude are required')
+
+    vol = _get_volunteer(uid)
+    if not vol:
+        return _error('You are not registered as a volunteer', 403)
+
+    vol.last_location_lat = lat
+    vol.last_location_lng = lng
+    db.session.commit()
+    return _success({'volunteer': vol.to_dict()}, 'Location updated')
+
+
+# ── POST /volunteer/upload-proof/<task_id> ──────────────────────────────────
+@volunteers_bp.route('/volunteer/upload-proof/<int:task_id>', methods=['POST'])
+@require_role('volunteer')
+def upload_proof(task_id):
+    uid  = int(get_jwt_identity())
+    data = request.form
+    notes = data.get('notes', '')
 
     vol = _get_volunteer(uid)
     if not vol:
@@ -118,11 +154,27 @@ def complete_task():
         task_id=task_id, volunteer_id=vol.volunteer_id
     ).first_or_404()
 
-    task.status             = 'Completed'
-    task.completed_at       = datetime.utcnow()
-    task.request.status     = 'Completed'
-    vol.completed_tasks     += 1
-    vol.availability_status = 'available'
+    if task.status != 'Assigned' and task.status != 'En Route' and task.status != 'On Site':
+        return _error(f'Task cannot be completed from state: {task.status}')
+
+    # Handle image
+    img_path = None
+    if 'proof_image' in request.files:
+        img_path = _save_file(request.files['proof_image'], 'task_proofs')
+
+    if not img_path:
+        return _error('Proof image is required')
+
+    # AI Verification
+    verification_result = verify_task_evidence(img_path, notes)
+
+    task.proof_image_path    = img_path
+    task.completion_notes    = notes
+    task.status              = 'Proof Submitted'
+    task.verification_status = 'Pending'
 
     db.session.commit()
-    return _success({'task': task.to_dict()}, 'Task marked as completed')
+    return _success({
+        'task': task.to_dict(),
+        'ai_verification': verification_result
+    }, 'Proof uploaded successfully. Pending Admin verification.')

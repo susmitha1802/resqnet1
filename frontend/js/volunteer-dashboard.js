@@ -6,6 +6,20 @@
 let nearbyRequests    = [];
 let myTasks           = [];
 let availabilityStatus = true;
+let volunteerLat      = 17.3850; // Fallback to Hyderabad
+let volunteerLng      = 78.4867;
+
+/* ── Haversine Distance ── */
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
 
 /* ── Populate Volunteer Info ── */
 function populateVolunteerInfo() {
@@ -30,6 +44,7 @@ function populateVolunteerInfo() {
 /* ── Stats ── */
 function updateStats() {
   const total    = nearbyRequests.length;
+  const within5km = nearbyRequests.filter(r => r.distance != null && r.distance <= 5).length;
   const high     = nearbyRequests.filter(r => r.priority_level === 'High').length;
   const accepted = myTasks.length;
   const done     = myTasks.filter(t => t.status === 'Completed').length;
@@ -38,6 +53,18 @@ function updateStats() {
   animateStatCounter('stat-high',      high);
   animateStatCounter('stat-accepted',  accepted);
   animateStatCounter('stat-completed', done);
+
+  // Widget update
+  const widget = document.getElementById('nearby-widget');
+  const widgetCount = document.getElementById('nearby-5km-count');
+  if (widget && widgetCount) {
+    if (within5km > 0) {
+      widgetCount.textContent = within5km;
+      widget.style.display = 'block';
+    } else {
+      widget.style.display = 'none';
+    }
+  }
 }
 
 function animateStatCounter(id, target) {
@@ -74,7 +101,7 @@ function renderNearbyRequests(requests) {
         </div>
       </div>
       <div class="request-card-meta">
-        <div class="meta-chip">📍 ${r.latitude?.toFixed(4)}, ${r.longitude?.toFixed(4)}</div>
+        <div class="meta-chip">📍 ${r.distance != null ? r.distance.toFixed(1) + ' km away' : r.latitude?.toFixed(4) + ', ' + r.longitude?.toFixed(4)}</div>
         <div class="meta-chip">👥 ${r.number_of_people} affected</div>
         <div class="meta-chip">📞 ${r.contact}</div>
         <div class="meta-chip">🕐 ${timeAgo(r.created_at)}</div>
@@ -86,7 +113,7 @@ function renderNearbyRequests(requests) {
           : `<button class="btn-resq-secondary" style="padding:9px 20px;font-size:0.85rem" disabled>🔄 ${r.status}</button>`
         }
         <a href="tel:${r.contact}" class="btn-resq-outline" style="padding:9px 20px;font-size:0.85rem">📞 Call</a>
-        <button class="btn-resq-secondary" style="padding:9px 20px;font-size:0.85rem" onclick="viewOnMap(${r.latitude},${r.longitude})">🗺️ Map</button>
+        <button class="btn-resq-secondary" style="padding:9px 20px;font-size:0.85rem" onclick="viewOnMap(${r.latitude},${r.longitude},${r.request_id})">🗺️ Navigate</button>
       </div>
     </div>
   `).join('');
@@ -114,16 +141,45 @@ async function acceptTask(requestId) {
   }
 }
 
-/* ── Complete Task ── */
-async function completeTask(taskId) {
-  const data = await Api.put('/volunteer/complete-task', { task_id: taskId });
-  if (data?.success) {
-    Toast.show('Task marked as completed! ✅', 'success');
-    await loadMyTasks();
-    await loadNearbyRequests();
-    updateStats();
-  } else {
-    Toast.show(data?.message || 'Could not complete task', 'danger');
+/* ── Submit Proof ── */
+async function submitProof(event, taskId) {
+  event.preventDefault();
+  const fileInput = document.getElementById(`proof_img_${taskId}`);
+  const notesInput = document.getElementById(`proof_notes_${taskId}`);
+  
+  const file = fileInput.files[0];
+  if (!file) return Toast.show('Please select an image', 'warning');
+  
+  const formData = new FormData();
+  formData.append('proof_image', file);
+  formData.append('notes', notesInput.value);
+  
+  const btn = event.target.querySelector('button');
+  btn.disabled = true;
+  btn.textContent = 'Uploading...';
+  
+  try {
+    const res = await fetch(`${API_BASE}/volunteer/upload-proof/${taskId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + localStorage.getItem('resqnet_token')
+      },
+      body: formData
+    });
+    const data = await res.json();
+    if (data.success) {
+      Toast.show('Proof uploaded! Pending review. ✅', 'success');
+      await loadMyTasks();
+      updateStats();
+    } else {
+      Toast.show(data.message || 'Upload failed', 'danger');
+      btn.disabled = false;
+      btn.textContent = '📤 Submit Proof';
+    }
+  } catch (err) {
+    Toast.show('Network error', 'danger');
+    btn.disabled = false;
+    btn.textContent = '📤 Submit Proof';
   }
 }
 
@@ -142,8 +198,14 @@ function renderMyTasks() {
       <td>${t.status}</td>
       <td style="color:var(--text-secondary);font-size:0.82rem">${timeAgo(t.assigned_at)}</td>
       <td>
-        ${t.status !== 'Completed' && t.status !== 'Cancelled'
-          ? `<button class="btn-resq-primary" style="padding:5px 14px;font-size:0.78rem" onclick="completeTask(${t.task_id})">✅ Complete</button>`
+        ${['Assigned', 'En Route', 'On Site'].includes(t.status)
+          ? `<form onsubmit="submitProof(event, ${t.task_id})" style="display:flex; flex-direction:column; gap:5px; max-width:250px;">
+               <input type="file" id="proof_img_${t.task_id}" accept="image/*" required class="resq-input" style="padding: 4px; font-size:0.75rem;">
+               <textarea id="proof_notes_${t.task_id}" placeholder="Completion notes" class="resq-input" style="min-height:40px; font-size:0.75rem; padding:4px;" required></textarea>
+               <button type="submit" class="btn-resq-primary" style="padding:4px 10px; font-size:0.75rem">📤 Upload Proof</button>
+             </form>`
+          : t.status === 'Proof Submitted'
+          ? `<span class="badge-pending">⏳ Pending Admin</span>`
           : `<span style="color:var(--text-muted);font-size:0.82rem">${t.status}</span>`
         }
       </td>
@@ -156,15 +218,15 @@ async function loadNearbyRequests() {
   const data = await Api.get('/help-requests');
   let pending = data?.requests?.filter(r => r.status === 'Pending') || [];
   
-  if (pending.length === 0) {
-    console.log("No pending requests from API, injecting demo data for Volunteer Dashboard");
-    pending = [
-      { request_id: 201, request_type: 'Rescue', priority_level: 'High', status: 'Pending', latitude: 17.4474, longitude: 78.3762, number_of_people: 4, contact: '9876543210', created_at: new Date(Date.now() - 1200000).toISOString(), description: 'Trapped on second floor due to waterlogging.' },
-      { request_id: 202, request_type: 'Food', priority_level: 'Medium', status: 'Pending', latitude: 17.4300, longitude: 78.4000, number_of_people: 10, contact: '9123456789', created_at: new Date(Date.now() - 3600000).toISOString(), description: 'Require food packets for stranded family.' },
-      { request_id: 203, request_type: 'Medicine', priority_level: 'High', status: 'Pending', latitude: 17.4500, longitude: 78.3800, number_of_people: 1, contact: '9988776655', created_at: new Date(Date.now() - 1800000).toISOString(), description: 'Elderly patient needs BP medication urgently.' }
-    ];
-  }
-  
+  // Calculate distance for all requests
+  pending.forEach(r => {
+    if (r.latitude != null && r.longitude != null) {
+      r.distance = haversine(volunteerLat, volunteerLng, r.latitude, r.longitude);
+    } else {
+      r.distance = 9999;
+    }
+  });
+
   nearbyRequests = pending;
   applyFilters();
   updateStats();
@@ -173,14 +235,6 @@ async function loadNearbyRequests() {
 async function loadMyTasks() {
   const data = await Api.get('/volunteer/tasks');
   let tasks = data?.tasks || [];
-  
-  if (tasks.length === 0) {
-    console.log("No tasks from API, injecting demo tasks for Volunteer Dashboard");
-    tasks = [
-      { task_id: 301, request_id: 150, request_type: 'Rescue', priority_level: 'High', status: 'In Progress', assigned_at: new Date(Date.now() - 5400000).toISOString(), latitude: 17.44, longitude: 78.38 },
-      { task_id: 302, request_id: 142, request_type: 'Food', priority_level: 'Medium', status: 'Completed', assigned_at: new Date(Date.now() - 86400000).toISOString(), latitude: 17.43, longitude: 78.39 }
-    ];
-  }
   
   myTasks = tasks;
   renderMyTasks();
@@ -194,13 +248,26 @@ function applyFilters() {
   const query = document.getElementById('search-input')?.value?.toLowerCase() || '';
 
   let filtered = [...nearbyRequests];
-  if (prio)  filtered = filtered.filter(r => r.priority_level === prio);
+  if (prio && prio !== 'Nearest')  filtered = filtered.filter(r => r.priority_level === prio);
   if (type)  filtered = filtered.filter(r => r.request_type === type);
   if (query) filtered = filtered.filter(r =>
     r.request_type?.toLowerCase().includes(query) ||
     r.description?.toLowerCase().includes(query) ||
     r.name?.toLowerCase().includes(query)
   );
+
+  // Sorting Logic: High Priority First, then Nearest Distance
+  filtered.sort((a, b) => {
+    if (prio === 'Nearest') {
+      return a.distance - b.distance;
+    } else {
+      const pA = a.priority_level === 'High' ? 3 : (a.priority_level === 'Medium' ? 2 : 1);
+      const pB = b.priority_level === 'High' ? 3 : (b.priority_level === 'Medium' ? 2 : 1);
+      if (pB !== pA) return pB - pA; // High priority first
+      return a.distance - b.distance; // Then nearest distance
+    }
+  });
+
   renderNearbyRequests(filtered);
 }
 
@@ -226,8 +293,31 @@ function initAvailabilityToggle() {
 }
 
 /* ── View on Map ── */
-function viewOnMap(lat, lng) {
-  window.open(`map.html?lat=${lat}&lng=${lng}`, '_blank');
+function viewOnMap(lat, lng, reqId) {
+  window.open(`map.html?lat=${lat}&lng=${lng}${reqId ? '&request_id=' + reqId : ''}`, '_blank');
+}
+
+/* ── Location Sync ── */
+async function syncLocation() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve();
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        volunteerLat = position.coords.latitude;
+        volunteerLng = position.coords.longitude;
+        await Api.put('/volunteer/update-location', { latitude: volunteerLat, longitude: volunteerLng });
+        resolve();
+      },
+      (error) => {
+        console.warn('Geolocation denied or failed. Using fallback location.', error);
+        resolve(); // Fallback to default
+      },
+      { timeout: 5000 }
+    );
+  });
 }
 
 /* ── Init ── */
@@ -237,6 +327,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   populateVolunteerInfo();
   initFilters();
   initAvailabilityToggle();
+  await syncLocation(); // Detect and sync before loading requests
   await Promise.all([loadNearbyRequests(), loadMyTasks()]);
 });
 

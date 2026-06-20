@@ -165,7 +165,7 @@
     .footer-brand { margin-bottom: 20px; }
     .footer-desc { color: var(--text-secondary); font-size: 0.875rem; line-height: 1.7; max-width: 280px; }
     .footer-heading { font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-primary); margin-bottom: 16px; }
-    .footer-links { list-style: none; }
+    .footer-links { list-style: none; padding: 0; margin: 0; }
     .footer-links li { margin-bottom: 10px; }
     .footer-links a { color: var(--text-secondary); text-decoration: none; font-size: 0.875rem; transition: var(--transition-sm); }
     .footer-links a:hover { color: var(--primary); }
@@ -185,10 +185,10 @@
       <div class="brand-icon">🚨</div>
       <span class="brand-name">Res<span>Q</span>Net</span>
     </a>
-    <button class="navbar-toggler border-0" type="button" style="color:var(--text-secondary)">
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" style="color:var(--text-secondary)">
       <span>☰</span>
     </button>
-    <div class="navbar-collapse collapse">
+    <div class="navbar-collapse collapse" id="navbarCollapse">
       <ul class="navbar-nav ms-auto align-items-center gap-1">
         <li class="nav-item"><a class="nav-link active" href="#home">Home</a></li>
         <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
@@ -572,22 +572,16 @@
 <footer class="resq-footer">
   <div class="container">
     <div class="row g-5">
-      <div class="col-lg-4">
+      <div class="col-lg-5">
         <div class="footer-brand">
           <a href="index.html" style="display:flex;align-items:center;gap:10px;text-decoration:none">
             <div class="brand-icon" style="width:36px;height:36px;border-radius:10px;background:var(--grad-primary);display:flex;align-items:center;justify-content:center;font-size:1rem">🚨</div>
             <span style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:1.2rem;color:var(--text-primary)">Res<span style="color:var(--primary)">Q</span>Net</span>
           </a>
         </div>
-        <p class="footer-desc">AI-powered disaster relief coordination connecting victims, volunteers, and administrators for faster emergency response.</p>
-        <div style="margin-top:20px;display:flex;gap:10px">
-          <a href="#" class="social-btn">🐦</a>
-          <a href="#" class="social-btn">📘</a>
-          <a href="#" class="social-btn">📸</a>
-          <a href="#" class="social-btn">💼</a>
-        </div>
+        <p class="footer-desc">AI-powered disaster relief coordination connecting victims, volunteers, NGOs, and administrators for faster emergency response.</p>
       </div>
-      <div class="col-6 col-lg-2">
+      <div class="col-6 col-lg-2 offset-lg-1">
         <div class="footer-heading">Platform</div>
         <ul class="footer-links">
           <li><a href="index.html">Home</a></li>
@@ -601,8 +595,6 @@
         <ul class="footer-links">
           <li><a href="help-request.html">Request Help</a></li>
           <li><a href="report-disaster.html">Report Disaster</a></li>
-          <li><a href="volunteer-dashboard.html">Volunteer</a></li>
-          <li><a href="admin-dashboard.html">Admin</a></li>
         </ul>
       </div>
       <div class="col-6 col-lg-2">
@@ -614,18 +606,10 @@
           <li><a href="#contact">Contact</a></li>
         </ul>
       </div>
-      <div class="col-6 col-lg-2">
-        <div class="footer-heading">Emergency</div>
-        <ul class="footer-links">
-          <li><a href="tel:112">Police: 112</a></li>
-          <li><a href="tel:101">Fire: 101</a></li>
-          <li><a href="tel:108">Ambulance: 108</a></li>
-          <li><a href="tel:1078">NDRF: 1078</a></li>
-        </ul>
       </div>
     </div>
     <div class="footer-bottom">
-      <div class="footer-bottom-text">© 2024 ResQNet. Built for CSP Academic Project. All rights reserved.</div>
+      <div class="footer-bottom-text">© 2026 ResQNet. AI Disaster Relief Coordination System.</div>
       <div class="footer-bottom-text">Made with ❤️ for disaster relief coordination</div>
     </div>
   </div>
@@ -691,9 +675,7 @@
 
   async function loadHeroStats() {
     try {
-      const res  = await fetch('http://127.0.0.1:5000/admin/dashboard', {
-        headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('resqnet_token') || '') }
-      });
+      const res  = await fetch('http://127.0.0.1:5000/public/stats');
       if (!res.ok) throw new Error();
       const data = await res.json();
       const s    = data.stats || {};
@@ -718,6 +700,54 @@
     loadLiveFeed();
     loadHeroStats();
   });
+
+  async function handleContactSubmit() {
+    const btn = document.getElementById('contact-submit-btn');
+    const name = document.getElementById('contact-name').value.trim();
+    const email = document.getElementById('contact-email').value.trim();
+    const subject = document.getElementById('contact-subject').value.trim();
+    const message = document.getElementById('contact-message').value.trim();
+
+    if (!name || !email || !subject || !message) {
+      if (typeof Toast !== 'undefined') Toast.show('Please fill in all fields', 'warning');
+      else alert('Please fill in all fields');
+      return;
+    }
+
+    try {
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '⏳ Sending...';
+      btn.disabled = true;
+
+      // Api wrapper used if imported, else standard fetch
+      const res = await fetch('http://127.0.0.1:5000/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, subject, message })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        if (typeof Toast !== 'undefined') Toast.show('Message submitted successfully', 'success');
+        else alert('Message submitted successfully');
+        
+        document.getElementById('contact-name').value = '';
+        document.getElementById('contact-email').value = '';
+        document.getElementById('contact-subject').value = '';
+        document.getElementById('contact-message').value = '';
+      } else {
+        if (typeof Toast !== 'undefined') Toast.show(data.message || 'Error submitting message', 'danger');
+        else alert(data.message || 'Error submitting message');
+      }
+    } catch (err) {
+      console.error(err);
+      if (typeof Toast !== 'undefined') Toast.show('Network error. Please try again.', 'danger');
+      else alert('Network error. Please try again.');
+    } finally {
+      btn.innerHTML = '📨 Send Message';
+      btn.disabled = false;
+    }
+  }
 
 </script>
 </body>

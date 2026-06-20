@@ -185,70 +185,46 @@ function quickAllocate(requestId, requestType) {
 
 
 /* ── Map ────────────────────────────────────────────────────────────────────── */
-let infoWindow = null;
+let infoWindow = null;  // kept for compatibility — popups handled by Leaflet
 let mapMarkerLib = null;
 
 async function initMap() {
   if (ngoMap) return;
-  const { Map } = await google.maps.importLibrary("maps");
-  mapMarkerLib = await google.maps.importLibrary("marker");
-
-  ngoMap = new Map(document.getElementById("ngo-map"), {
-    center: { lat: 17.4401, lng: 78.4487 },
-    zoom: 11,
-    mapId: "DEMO_MAP_ID_NGO",
-    disableDefaultUI: true,
-    zoomControl: true,
-    styles: [
-      { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
-      { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
-      { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
-      { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] },
-      { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#515c6d" }] },
-      { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] },
-    ],
-  });
-
-  infoWindow = new google.maps.InfoWindow();
+  // ResQMap is provided by leaflet-map.js (loaded in HTML)
+  ngoMap = ResQMap.createMap('ngo-map', { lat: 17.4401, lng: 78.4487, zoom: 11 });
+  ngoMap._leafletMarkers = [];
 
   // If map initializes after data is loaded, draw markers
   if (allRequests.length > 0) updateMapMarkers();
 }
 
-// Ensure initMap is global for Google Maps callback
+// Ensure initMap is global (no longer a Google callback, but keeps API)
 window.initMap = initMap;
 
 function updateMapMarkers() {
-  if (!ngoMap || !mapMarkerLib) return;
+  if (!ngoMap) return;
 
   // Clear old markers
-  mapMarkers.forEach(m => m.setMap(null));
-  mapMarkers = [];
+  (ngoMap._leafletMarkers || []).forEach(m => ngoMap.removeLayer(m));
+  ngoMap._leafletMarkers = [];
 
   allRequests.forEach(r => {
     if (!r.latitude || !r.longitude) return;
     const color  = TYPE_COLORS[r.request_type] || '#9CA3AF';
-    
-    const el = document.createElement('div');
-    el.innerHTML = `<div style="width:12px;height:12px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 0 6px ${color}"></div>`;
-    el.style.cursor = 'pointer';
-    
-    const marker = new mapMarkerLib.AdvancedMarkerElement({
-      map: ngoMap,
-      position: { lat: parseFloat(r.latitude), lng: parseFloat(r.longitude) },
-      content: el
-    });
-    mapMarkers.push(marker);
+    const icon   = ResQMap.circleIcon(color, 12);
 
-    marker.addListener('click', () => {
-      const html = `<div style="color:black;font-family:Inter,sans-serif">
-        <b>${TYPE_ICONS[r.request_type] || '📋'} ${r.request_type}</b><br>
-        ${r.name} — ${r.number_of_people} people<br>
-        <span style="color:${color}">${r.priority_level} Priority</span>
-      </div>`;
-      infoWindow.setContent(html);
-      infoWindow.open({ anchor: marker, map: ngoMap });
-    });
+    const popup = ResQMap.popupHtml(`
+      <b>${TYPE_ICONS[r.request_type] || '📋'} ${r.request_type}</b><br>
+      ${r.name} — ${r.number_of_people} people<br>
+      <span style="color:${color}">${r.priority_level} Priority</span>
+    `);
+
+    const marker = L.marker(
+      [parseFloat(r.latitude), parseFloat(r.longitude)],
+      { icon }
+    ).bindPopup(popup).addTo(ngoMap);
+
+    ngoMap._leafletMarkers.push(marker);
   });
 }
 
@@ -257,15 +233,6 @@ function updateMapMarkers() {
 async function loadInventory() {
   const data = await Api.get('/ngo/resources');
   let res = data?.resources || [];
-  
-  if (res.length === 0) {
-    console.log("No inventory from API, injecting demo data for NGO Dashboard");
-    res = [
-      { resource_id: 10, name: 'Medical Kits', category: 'Medicine', quantity: 50, unit: 'kits', location: 'Central Warehouse', allocated_to: null },
-      { resource_id: 11, name: 'Food Packets', category: 'Food', quantity: 500, unit: 'packets', location: 'South Hub', allocated_to: 103 },
-      { resource_id: 12, name: 'Blankets', category: 'Shelter', quantity: 200, unit: 'items', location: 'Central Warehouse', allocated_to: null }
-    ];
-  }
   
   inventory = res;
   renderInventory();

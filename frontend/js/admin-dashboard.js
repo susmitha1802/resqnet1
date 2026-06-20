@@ -43,10 +43,6 @@ function animateStatCounter(id, target) {
 /* ── Load dashboard stats from API ── */
 async function loadDashboard() {
   let data = await Api.get('/admin/dashboard');
-  if (!data?.stats || data.stats.total_requests === 0) {
-    console.log("No stats from API, injecting demo stats for Admin Dashboard");
-    data = { stats: { total_requests: 120, high_priority: 15, active_volunteers: 45, completed: 85, pending: 35, disaster_reports: 8, total_volunteers: 60, relief_tasks: 25 } };
-  }
 
   const s = data.stats || {};
   animateStatCounter('stat-total',      s.total_requests    || 0);
@@ -100,19 +96,6 @@ async function loadDashboard() {
 /* ── Load analytics + render charts ── */
 async function loadAnalytics() {
   let data = await Api.get('/admin/analytics');
-  if (!data || Object.keys(data.by_type || {}).length === 0) {
-    console.log("No analytics from API, injecting demo analytics for Admin Dashboard");
-    data = {
-      by_type: { Rescue: 20, Food: 45, Water: 30, Medicine: 15, Shelter: 10 },
-      by_status: { Pending: 35, Accepted: 40, Completed: 85, Cancelled: 5 },
-      by_priority: { High: 15, Medium: 60, Low: 45 },
-      by_disaster: { Flood: 50, Cyclone: 30, Earthquake: 5, Fire: 20, Other: 15 },
-      by_day: [
-        { day: '2023-10-01', count: 5 }, { day: '2023-10-02', count: 12 }, { day: '2023-10-03', count: 8 },
-        { day: '2023-10-04', count: 15 }, { day: '2023-10-05', count: 25 }, { day: '2023-10-06', count: 18 }, { day: '2023-10-07', count: 37 }
-      ]
-    };
-  }
 
   const byType     = data.by_type     || {};
   const byStatus   = data.by_status   || {};
@@ -288,15 +271,6 @@ async function loadRequests() {
   const data = await Api.get('/admin/requests');
   let requests = data?.requests || [];
   
-  if (requests.length === 0) {
-    console.log("No requests from API, injecting demo data for Admin Dashboard");
-    requests = [
-      { request_id: 101, name: 'Alice Smith', request_type: 'Rescue', priority_level: 'High', status: 'Pending', latitude: 17.4474, longitude: 78.3762, created_at: new Date(Date.now() - 3600000).toISOString(), number_of_people: 5 },
-      { request_id: 102, name: 'Bob Johnson', request_type: 'Food', priority_level: 'Medium', status: 'Accepted', latitude: 17.4300, longitude: 78.4000, created_at: new Date(Date.now() - 7200000).toISOString(), number_of_people: 12 },
-      { request_id: 103, name: 'Charlie Brown', request_type: 'Medicine', priority_level: 'High', status: 'In Progress', latitude: 17.4500, longitude: 78.3800, created_at: new Date(Date.now() - 86400000).toISOString(), number_of_people: 2 }
-    ];
-  }
-  
   allRequests = requests;
   renderRequestsTable(allRequests);
   renderDistributionBars(allRequests.filter(r => ['Pending','Accepted'].includes(r.status)));
@@ -323,6 +297,161 @@ function renderRequestsTable(requests) {
       <td>${r.number_of_people}</td>
     </tr>
   `).join('');
+}
+
+/* ── Fetch Disaster Reports ── */
+async function loadDisasters() {
+  try {
+    const data = await Api.get('/reports');
+    const reports = data.reports || [];
+    const tbody = document.getElementById('disasters-tbody');
+    if (!tbody) return;
+
+    if (reports.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted)">No disaster reports found.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = reports.map(r => `
+      <tr>
+        <td style="font-weight:600">#${r.report_id}</td>
+        <td>${r.user_name || 'User ' + r.user_id}</td>
+        <td>🔥 ${r.disaster_type}</td>
+        <td>
+          <span class="priority-badge" style="
+            background:${r.severity.includes('Severe') ? 'rgba(239,68,68,0.2)' : (r.severity.includes('Moderate') ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.2)')};
+            color:${r.severity.includes('Severe') ? '#EF4444' : (r.severity.includes('Moderate') ? '#F59E0B' : '#10B981')}
+          ">${r.severity}</span>
+        </td>
+        <td style="color:var(--text-secondary)">📍 ${parseFloat(r.latitude).toFixed(4)}, ${parseFloat(r.longitude).toFixed(4)}</td>
+        <td style="color:var(--text-secondary)">${new Date(r.created_at).toLocaleString()}</td>
+        <td>
+          <a href="map.html?report_id=${r.report_id}" class="btn-resq-outline" style="padding:5px 12px;font-size:0.75rem">🗺️ Map</a>
+        </td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    console.error('Failed to load disasters:', err);
+  }
+}
+
+/* ── Fetch Contact Messages ── */
+async function loadContactMessages() {
+  try {
+    const data = await Api.get('/admin/contact-messages');
+    const messages = data.messages || [];
+    
+    // Update KPI
+    const unreadCount = messages.filter(m => m.status === 'Unread').length;
+    const statSupport = document.getElementById('stat-support-messages');
+    const changeSupport = document.getElementById('stat-change-support-messages');
+    if (statSupport) statSupport.textContent = messages.length;
+    if (changeSupport) {
+      changeSupport.textContent = `${unreadCount} unread`;
+      changeSupport.className = `stat-change ${unreadCount > 0 ? 'down' : 'up'}`;
+    }
+
+    const tbody = document.getElementById('support-messages-tbody');
+    if (!tbody) return;
+
+    if (messages.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted)">No support messages found.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = messages.map(m => `
+      <tr>
+        <td style="font-weight:600">${m.name}</td>
+        <td><a href="mailto:${m.email}">${m.email}</a></td>
+        <td style="max-width:200px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap">${m.subject}</td>
+        <td style="max-width:300px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap" title="${m.message.replace(/"/g, '&quot;')}">${m.message}</td>
+        <td style="color:var(--text-secondary)">${new Date(m.created_at).toLocaleString()}</td>
+        <td>
+          <span class="badge-${m.status === 'Unread' ? 'danger' : 'success'}">${m.status}</span>
+        </td>
+        <td>
+          <div style="display:flex;gap:8px">
+            ${m.status === 'Unread' ? `<button class="btn-resq-outline" style="padding:4px 8px;font-size:0.75rem" onclick="markContactMessageRead(${m.id})">Mark Read</button>` : ''}
+            <button class="btn-resq-outline" style="padding:4px 8px;font-size:0.75rem;color:#EF4444;border-color:rgba(239,68,68,0.2)" onclick="deleteContactMessage(${m.id})">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    console.error('Failed to load contact messages:', err);
+  }
+}
+
+async function markContactMessageRead(id) {
+  try {
+    const data = await Api.put('/admin/contact-messages/' + id + '/read');
+    if (data.success) {
+      Toast.show('Message marked as read', 'success');
+      loadContactMessages();
+    }
+  } catch (err) {
+    console.error(err);
+    Toast.show('Failed to mark as read', 'danger');
+  }
+}
+
+async function deleteContactMessage(id) {
+  if (!confirm('Are you sure you want to delete this message?')) return;
+  try {
+    const data = await Api.delete('/admin/contact-messages/' + id);
+    if (data.success) {
+      Toast.show('Message deleted', 'success');
+      loadContactMessages();
+    }
+  } catch (err) {
+    console.error(err);
+    Toast.show('Failed to delete message', 'danger');
+  }
+}
+
+/* ── Load Pending Verifications ── */
+async function loadVerifications() {
+  const tbody = document.getElementById('verifications-tbody');
+  if (!tbody) return;
+  const data = await Api.get('/admin/pending-verifications');
+  if (!data?.success) return;
+  const vs = data.verifications || [];
+  if (!vs.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted)">No pending verifications.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = vs.map(v => `
+    <tr>
+      <td>#${v.task_id}</td>
+      <td>Volunteer #${v.volunteer_id}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${v.completion_notes || ''}">
+        ${v.completion_notes || '<span style="color:var(--text-muted)">No notes</span>'}
+      </td>
+      <td>
+        <a href="http://127.0.0.1:5000${v.proof_image_path}" target="_blank" style="color:var(--primary);text-decoration:underline;">View Image</a>
+      </td>
+      <td><span class="badge-pending">⏳ Pending</span></td>
+      <td>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-resq-primary" style="padding:4px 10px;font-size:0.75rem;" onclick="reviewTask(${v.task_id}, 'Approve')">Approve</button>
+          <button class="btn-resq-outline" style="padding:4px 10px;font-size:0.75rem;border-color:var(--danger);color:var(--danger);" onclick="reviewTask(${v.task_id}, 'Reject')">Reject</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+/* ── Review Task ── */
+async function reviewTask(taskId, action) {
+  if (!confirm(`Are you sure you want to ${action} this task proof?`)) return;
+  const data = await Api.put(`/admin/verify-task/${taskId}`, { action });
+  if (data?.success) {
+    Toast.show(`Task ${action.toLowerCase()}d!`, 'success');
+    loadVerifications();
+    loadDashboard();
+  } else {
+    Toast.show(data?.message || `Failed to ${action} task`, 'danger');
+  }
 }
 
 /* ── Filters ── */
@@ -365,6 +494,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Route guard: admin role only
   if (!Session.requireRole('admin')) return;
   populateAdminInfo();
-  await Promise.all([loadDashboard(), loadAnalytics(), loadRequests()]);
+  await Promise.all([loadDashboard(), loadAnalytics(), loadRequests(), loadDisasters(), loadContactMessages(), loadVerifications()]);
   initFilters();
 });
