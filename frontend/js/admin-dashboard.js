@@ -103,11 +103,15 @@ async function loadAnalytics() {
   const byDisaster = data.by_disaster || {};
   const byDay      = data.by_day      || [];
 
+  // Predefined lists to ensure consistent categories and colors
+  const DISASTER_TYPES = ['Flood', 'Cyclone', 'Earthquake', 'Landslide', 'Fire'];
+  const REQUEST_TYPES = ['Rescue', 'Food', 'Water', 'Medicine', 'Shelter'];
+
   // 1. Bar — Requests by Type
   const barCtx = document.getElementById('chart-requests-type')?.getContext('2d');
   if (barCtx) {
-    const labels = Object.keys(byType);
-    const values = Object.values(byType);
+    const labels = REQUEST_TYPES;
+    const values = labels.map(l => byType[l] || 0);
     if (chartRequestsType) chartRequestsType.destroy();
     chartRequestsType = new Chart(barCtx, {
       type: 'bar',
@@ -124,7 +128,7 @@ async function loadAnalytics() {
         ...chartDefaults,
         scales: {
           x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9CA3AF' } },
-          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9CA3AF' }, beginAtZero: true }
+          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9CA3AF' }, beginAtZero: true, suggestedMax: 5 }
         }
       }
     });
@@ -133,8 +137,8 @@ async function loadAnalytics() {
   // 2. Doughnut — Status Distribution
   const donutCtx = document.getElementById('chart-status')?.getContext('2d');
   if (donutCtx) {
-    const labels = Object.keys(byStatus);
-    const values = Object.values(byStatus);
+    const labels = ['Pending', 'Accepted', 'En Route', 'On Site', 'Completed'];
+    const values = labels.map(l => byStatus[l] || 0);
     if (chartStatus) chartStatus.destroy();
     chartStatus = new Chart(donutCtx, {
       type: 'doughnut',
@@ -142,8 +146,8 @@ async function loadAnalytics() {
         labels,
         datasets: [{
           data: values,
-          backgroundColor: ['rgba(16,185,129,0.8)','rgba(245,158,11,0.8)','rgba(59,130,246,0.8)','rgba(107,114,128,0.8)'],
-          borderColor: ['#10B981','#F59E0B','#3B82F6','#6B7280'],
+          backgroundColor: ['rgba(239,68,68,0.7)', 'rgba(59,130,246,0.7)', 'rgba(245,158,11,0.7)', 'rgba(139,92,246,0.7)', 'rgba(16,185,129,0.7)'],
+          borderColor:      ['#EF4444',             '#3B82F6',             '#F59E0B',             '#8B5CF6',              '#10B981'],
           borderWidth: 2, hoverOffset: 8,
         }]
       },
@@ -187,7 +191,7 @@ async function loadAnalytics() {
         },
         scales: {
           x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9CA3AF' } },
-          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9CA3AF' }, beginAtZero: true }
+          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9CA3AF' }, beginAtZero: true, suggestedMax: 5 }
         }
       }
     });
@@ -196,8 +200,8 @@ async function loadAnalytics() {
   // 4. Polar — Disaster types
   const polarCtx = document.getElementById('chart-disasters')?.getContext('2d');
   if (polarCtx) {
-    const labels = Object.keys(byDisaster);
-    const values = Object.values(byDisaster);
+    const labels = DISASTER_TYPES;
+    const values = labels.map(l => byDisaster[l] || 0);
     if (chartDisasters) chartDisasters.destroy();
     chartDisasters = new Chart(polarCtx, {
       type: 'polarArea',
@@ -205,8 +209,8 @@ async function loadAnalytics() {
         labels,
         datasets: [{
           data: values,
-          backgroundColor: ['rgba(59,130,246,0.7)','rgba(139,92,246,0.7)','rgba(239,68,68,0.7)','rgba(16,185,129,0.7)','rgba(245,158,11,0.7)'],
-          borderColor: ['#3B82F6','#8B5CF6','#EF4444','#10B981','#F59E0B'],
+          backgroundColor: ['rgba(59,130,246,0.7)','rgba(139,92,246,0.7)','rgba(16,185,129,0.7)','rgba(245,158,11,0.7)','rgba(239,68,68,0.7)'],
+          borderColor: ['#3B82F6','#8B5CF6','#10B981','#F59E0B','#EF4444'],
           borderWidth: 2
         }]
       },
@@ -216,7 +220,7 @@ async function loadAnalytics() {
           ...chartDefaults.plugins,
           legend: { display: true, position: 'bottom', labels: { color: '#9CA3AF', padding: 10, usePointStyle: true, pointStyleWidth: 10 } }
         },
-        scales: { r: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#9CA3AF', backdropColor: 'transparent' } } }
+        scales: { r: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#9CA3AF', backdropColor: 'transparent', stepSize: 1 } } }
       }
     });
   }
@@ -324,6 +328,12 @@ async function loadDisasters() {
           ">${r.severity}</span>
         </td>
         <td style="color:var(--text-secondary)">📍 ${parseFloat(r.latitude).toFixed(4)}, ${parseFloat(r.longitude).toFixed(4)}</td>
+        <td>
+          <div style="font-size:0.75rem;line-height:1.2">
+            <strong>${r.predicted_disaster_type || 'Unknown'}</strong><br>
+            <span style="color:var(--text-muted)">${(r.prediction_confidence !== null && r.prediction_confidence !== undefined) ? r.prediction_confidence + '%' : 'N/A'}</span>
+          </div>
+        </td>
         <td style="color:var(--text-secondary)">${new Date(r.created_at).toLocaleString()}</td>
         <td>
           <a href="map.html?report_id=${r.report_id}" class="btn-resq-outline" style="padding:5px 12px;font-size:0.75rem">🗺️ Map</a>

@@ -92,14 +92,15 @@
   </div>
 
   <!-- 5km Nearby Widget -->
-  <div class="resq-card" id="nearby-widget" style="margin-top:20px; background:rgba(255,75,43,0.1); border:1px solid rgba(255,75,43,0.3); display:none;">
-    <div style="padding:16px 20px; display:flex; align-items:center; gap:12px;">
-      <div style="font-size:2rem;">🚨</div>
+  <div class="resq-alert danger" id="nearby-widget" style="margin-top:16px; display:none; align-items:center; justify-content:space-between">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span style="font-size:1.4rem;">🚨</span>
       <div>
-        <div style="font-weight:800; font-size:1.1rem; color:var(--primary)">Critical: <span id="nearby-5km-count">0</span> Requests Within 5 km</div>
-        <div style="font-size:0.85rem; color:var(--text-secondary)">These emergencies are in your immediate vicinity. Please respond if you are available.</div>
+        <div style="font-weight:700; color:var(--primary)">Critical: <span id="nearby-5km-count">0</span> Requests Within 5 km</div>
+        <div style="font-size:0.8rem; color:var(--text-secondary)">These emergencies are in your immediate vicinity.</div>
       </div>
     </div>
+    <a href="#nearby-requests" class="btn-resq-primary" style="padding:6px 12px; font-size:0.75rem">View Now</a>
   </div>
 
   <!-- Stats Grid -->
@@ -139,7 +140,7 @@
     <!-- Left: Nearby Requests -->
     <div>
       <!-- Filter bar -->
-      <div class="resq-card" style="padding:16px 20px;margin-bottom:16px">
+      <div class="resq-card" style="margin-bottom:16px">
         <div class="filter-bar" style="margin:0">
           <div class="filter-search" style="flex:1">
             <span class="filter-search-icon">🔍</span>
@@ -168,9 +169,8 @@
         <div style="text-align:center;padding:40px;color:var(--text-muted)">Loading nearby requests...</div>
       </div>
 
-      <!-- My Task History -->
       <div class="resq-card" style="margin-top:24px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px">
           <h6 style="font-weight:700;margin:0">📋 My Task History</h6>
         </div>
         <div class="resq-table-wrapper">
@@ -226,13 +226,18 @@
         </div>
       </div>
 
+      <!-- Update Location -->
+      <div style="margin-bottom: 20px;">
+        <button class="btn-resq-outline" style="width: 100%; padding: 10px; font-weight: 600;" id="update-loc-btn" onclick="updateLocationManually()">📍 Update My Location</button>
+      </div>
+
       <!-- Mini Map -->
-      <div class="resq-card" style="padding:0;overflow:hidden;margin-bottom:20px">
-        <div style="padding:16px 20px;border-bottom:1px solid var(--border-glass)">
+      <div class="resq-card" style="margin-bottom:20px">
+        <div style="margin-bottom:16px">
           <div style="font-weight:700;font-size:0.9rem">📍 Area Map</div>
           <div style="color:var(--text-muted);font-size:0.75rem">Showing your location & nearby requests</div>
         </div>
-        <div id="vol-mini-map" style="height:220px"></div>
+        <div id="vol-mini-map" style="height:220px; border-radius:var(--radius); overflow:hidden; border:1px solid var(--border-glass)"></div>
       </div>
 
       <!-- Impact Stats -->
@@ -305,37 +310,7 @@
         el.style.width = el.dataset.width + '%';
       });
     }, 300);
-
-    // ── Mini Map (Leaflet) ──
-    initVolMap();
   });
-
-  async function initVolMap() {
-    const miniMap = ResQMap.createMap('vol-mini-map', { lat: 17.4401, lng: 78.4487, zoom: 12 });
-
-    // Volunteer centre marker
-    L.marker([17.4401, 78.4487], {
-      icon: ResQMap.circleIcon('#10B981', 14),
-    }).bindPopup(ResQMap.popupHtml('<strong>📍 Your Area</strong>')).addTo(miniMap);
-
-    // Load request markers
-    try {
-      const data = await Api.get('/map/data');
-      if (data && data.requests) {
-        data.requests.forEach(r => {
-          if (!r.latitude || !r.longitude) return;
-          const priority = r.priority_level || 'Medium';
-          const color = ResQMap.priorityColor(priority);
-          const icon  = priority === 'High' ? ResQMap.pulseIcon(color) : ResQMap.circleIcon(color, 10);
-          L.marker([parseFloat(r.latitude), parseFloat(r.longitude)], { icon })
-            .bindPopup(ResQMap.popupHtml(`<b>${r.request_type}</b><br>${priority} Priority`))
-            .addTo(miniMap);
-        });
-      }
-    } catch (err) {
-      console.warn('Mini-map data load failed:', err);
-    }
-  }
 </script>
 </body>
 </html>

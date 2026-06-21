@@ -178,6 +178,13 @@ async function handleReportSubmit(e) {
   document.getElementById('report-form').style.display = 'none';
   document.getElementById('success-state').style.display = 'flex';
 
+  // Inject AI prediction if available
+  if (data?.report?.predicted_disaster_type && data.report.predicted_disaster_type !== 'Unknown') {
+    document.getElementById('ai-prediction-text').textContent = data.report.predicted_disaster_type;
+    document.getElementById('ai-confidence-text').textContent = data.report.prediction_confidence;
+    document.getElementById('ai-result-box').style.display = 'block';
+  }
+
   const mapLink = document.getElementById('success-map-link');
   if (mapLink && data?.report?.report_id) {
     mapLink.href = `map.html?report_id=${data.report.report_id}`;

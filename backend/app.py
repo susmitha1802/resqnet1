@@ -411,21 +411,54 @@ def create_app(config_class=Config) -> Flask:
     @app.route('/map/data', methods=['GET'])
     def map_data():
         """Aggregated data for the live map page."""
-        from models import HelpRequest, DisasterReport, Volunteer
-        requests  = HelpRequest.query.filter(
+        from models import HelpRequest, DisasterReport, Volunteer, ReliefTask
+        from sqlalchemy.orm import joinedload
+
+        # Eager load user to prevent N+1 queries in Volunteer.to_dict()
+        map_volunteers = Volunteer.query.options(
+            joinedload(Volunteer.user)
+        ).filter(
+            Volunteer.last_location_lat.isnot(None),
+            Volunteer.last_location_lng.isnot(None)
+        ).all()
+
+        total_volunteers = Volunteer.query.count()
+
+        # Get requests without eager loading tasks because lazy='dynamic' doesn't support it
+        requests = HelpRequest.query.filter(
             HelpRequest.status.in_(['Pending', 'Accepted'])
         ).all()
-        reports   = DisasterReport.query.order_by(
+
+        # Build request dicts manually to avoid hitting `tasks.all()` in `to_dict()`
+        requests_data = [{
+            'request_id': r.request_id,
+            'name': r.name,
+            'contact': r.contact,
+            'request_type': r.request_type,
+            'priority_level': r.priority_level,
+            'number_of_people': r.number_of_people,
+            'description': r.description,
+            'latitude': float(r.latitude),
+            'longitude': float(r.longitude),
+            'status': r.status,
+            'created_at': r.created_at.isoformat() + 'Z' if r.created_at else None,
+            # Skip assigned_volunteer to prevent N+1 queries for the map
+        } for r in requests]
+
+        reports = DisasterReport.query.order_by(
             DisasterReport.created_at.desc()
         ).limit(50).all()
-        volunteers = Volunteer.query.filter_by(
-            availability_status='available'
-        ).all()
+
+        # Total active incidents = active requests + recent disaster reports
+        total_active = len(requests) + len(reports)
+
         return jsonify({
-            'success':    True,
-            'requests':   [r.to_dict() for r in requests],
-            'reports':    [r.to_dict() for r in reports],
-            'volunteers': [v.to_dict() for v in volunteers],
+            'success':          True,
+            'requests':         requests_data,
+            'reports':          [r.to_dict() for r in reports],
+            'volunteers':       [v.to_dict() for v in map_volunteers],
+            'total_volunteers': total_volunteers,
+            'total_active':     total_active,
         })
 
     @app.route('/public/stats', methods=['GET'])
@@ -433,8 +466,8 @@ def create_app(config_class=Config) -> Flask:
         """Public homepage statistics."""
         from models import HelpRequest, Volunteer, ReliefTask
         
-        # Requests Handled = total completed tasks
-        tasks_handled = ReliefTask.query.filter_by(status='Completed').count()
+        # Requests Handled = total requests in system
+        total_requests = HelpRequest.query.count()
         
         # Active Volunteers = currently available
         active_vols = Volunteer.query.filter_by(availability_status='available').count()
@@ -442,13 +475,10 @@ def create_app(config_class=Config) -> Flask:
         # Completed = total resolved requests
         completed_reqs = HelpRequest.query.filter_by(status='Completed').count()
         
-        # Fallback if tasks_handled is 0 but there are completed requests
-        requests_handled = max(tasks_handled, completed_reqs)
-        
         return jsonify({
             'success': True,
             'stats': {
-                'total_requests': requests_handled,
+                'total_requests': total_requests,
                 'active_volunteers': active_vols,
                 'completed': completed_reqs
             }

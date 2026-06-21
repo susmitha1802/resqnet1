@@ -8,6 +8,8 @@ let myTasks           = [];
 let availabilityStatus = true;
 let volunteerLat      = 17.3850; // Fallback to Hyderabad
 let volunteerLng      = 78.4867;
+let miniMapInstance   = null;
+let volunteerMarker   = null;
 
 /* ── Haversine Distance ── */
 function haversine(lat1, lon1, lat2, lon2) {
@@ -102,18 +104,20 @@ function renderNearbyRequests(requests) {
       </div>
       <div class="request-card-meta">
         <div class="meta-chip">📍 ${r.distance != null ? r.distance.toFixed(1) + ' km away' : r.latitude?.toFixed(4) + ', ' + r.longitude?.toFixed(4)}</div>
-        <div class="meta-chip">👥 ${r.number_of_people} affected</div>
-        <div class="meta-chip">📞 ${r.contact}</div>
+        ${r.is_report ? '' : `<div class="meta-chip">👥 ${r.number_of_people} affected</div>`}
+        ${r.is_report ? '' : (r.contact && r.contact !== 'N/A' ? `<div class="meta-chip">📞 ${r.contact}</div>` : '')}
         <div class="meta-chip">🕐 ${timeAgo(r.created_at)}</div>
       </div>
       <p class="request-card-desc">${r.description || 'No description provided.'}</p>
       <div class="request-card-actions">
-        ${r.status === 'Pending'
-          ? `<button class="btn-resq-primary" style="padding:9px 20px;font-size:0.85rem" onclick="acceptTask(${r.request_id})">✅ Accept Task</button>`
-          : `<button class="btn-resq-secondary" style="padding:9px 20px;font-size:0.85rem" disabled>🔄 ${r.status}</button>`
+        ${r.is_report 
+          ? `<div class="btn-resq-secondary" style="padding:9px 20px;font-size:0.85rem;background:rgba(249,115,22,0.1);color:#F97316;border:1px solid rgba(249,115,22,0.3);text-align:center;cursor:default">🔥 Hazard Alert</div>`
+          : r.status === 'Pending'
+            ? `<button class="btn-resq-primary" style="padding:9px 20px;font-size:0.85rem" onclick="acceptTask(${r.request_id})">✅ Accept Task</button>`
+            : `<button class="btn-resq-secondary" style="padding:9px 20px;font-size:0.85rem" disabled>🔄 ${r.status}</button>`
         }
-        <a href="tel:${r.contact}" class="btn-resq-outline" style="padding:9px 20px;font-size:0.85rem">📞 Call</a>
-        <button class="btn-resq-secondary" style="padding:9px 20px;font-size:0.85rem" onclick="viewOnMap(${r.latitude},${r.longitude},${r.request_id})">🗺️ Navigate</button>
+        ${r.is_report ? '' : `<a href="tel:${r.contact}" class="btn-resq-outline" style="padding:9px 20px;font-size:0.85rem">📞 Call</a>`}
+        <button class="btn-resq-secondary" style="padding:9px 20px;font-size:0.85rem" onclick="viewOnMap(${r.latitude},${r.longitude},'${r.is_report ? 'R' + r.report_id : r.request_id}')">🗺️ Navigate</button>
       </div>
     </div>
   `).join('');
@@ -215,11 +219,32 @@ function renderMyTasks() {
 
 /* ── Load from real API ── */
 async function loadNearbyRequests() {
-  const data = await Api.get('/help-requests');
-  let pending = data?.requests?.filter(r => r.status === 'Pending') || [];
+  const reqData = await Api.get('/help-requests');
+  const repData = await Api.get('/reports');
+
+  let pending = reqData?.requests?.filter(r => r.status === 'Pending') || [];
+  let reports = repData?.reports || [];
+
+  // Transform reports into a similar structure as help requests for rendering
+  let mergedReports = reports.map(r => ({
+    request_id: 'R' + r.report_id, // Prefix with R to distinguish
+    request_type: r.disaster_type || 'General Disaster',
+    priority_level: 'High', // Treat general disasters as high priority hazards
+    status: 'Info Only',
+    latitude: r.latitude,
+    longitude: r.longitude,
+    number_of_people: 'Unknown',
+    contact: 'N/A',
+    created_at: r.created_at,
+    description: `[Disaster Report] ${r.disaster_type}: ${r.description || ''}`,
+    is_report: true, // Flag to hide accept button
+    report_id: r.report_id
+  }));
+
+  let combined = [...pending, ...mergedReports];
   
   // Calculate distance for all requests
-  pending.forEach(r => {
+  combined.forEach(r => {
     if (r.latitude != null && r.longitude != null) {
       r.distance = haversine(volunteerLat, volunteerLng, r.latitude, r.longitude);
     } else {
@@ -227,7 +252,7 @@ async function loadNearbyRequests() {
     }
   });
 
-  nearbyRequests = pending;
+  nearbyRequests = combined;
   applyFilters();
   updateStats();
 }
@@ -294,7 +319,15 @@ function initAvailabilityToggle() {
 
 /* ── View on Map ── */
 function viewOnMap(lat, lng, reqId) {
-  window.open(`map.html?lat=${lat}&lng=${lng}${reqId ? '&request_id=' + reqId : ''}`, '_blank');
+  let param = '';
+  if (reqId) {
+    if (typeof reqId === 'string' && reqId.startsWith('R')) {
+      param = `&report_id=${reqId.substring(1)}`;
+    } else {
+      param = `&request_id=${reqId}`;
+    }
+  }
+  window.open(`map.html?lat=${lat}&lng=${lng}${param}`, '_blank');
 }
 
 /* ── Location Sync ── */
@@ -320,6 +353,50 @@ async function syncLocation() {
   });
 }
 
+async function updateLocationManually() {
+  const btn = document.getElementById('update-loc-btn');
+  if (btn) btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Updating...';
+  
+  await syncLocation();
+  await loadNearbyRequests(); // Recalculate distance
+  if (typeof initVolMap === 'function') await initVolMap();
+  
+  Toast.show('Location updated successfully', 'success');
+  if (btn) btn.innerHTML = '📍 Update My Location';
+}
+
+/* ── Mini Map ── */
+async function initVolMap() {
+  if (miniMapInstance) {
+    miniMapInstance.setView([volunteerLat, volunteerLng], 12);
+    if (volunteerMarker) volunteerMarker.setLatLng([volunteerLat, volunteerLng]);
+    return;
+  }
+
+  miniMapInstance = ResQMap.createMap('vol-mini-map', { lat: volunteerLat, lng: volunteerLng, zoom: 12 });
+  volunteerMarker = L.marker([volunteerLat, volunteerLng], {
+    icon: ResQMap.circleIcon('#10B981', 14),
+  }).bindPopup(ResQMap.popupHtml('<strong>📍 Your Area</strong>')).addTo(miniMapInstance);
+
+  // Load request markers
+  try {
+    const data = await Api.get('/map/data');
+    if (data && data.requests) {
+      data.requests.forEach(r => {
+        if (!r.latitude || !r.longitude) return;
+        const priority = r.priority_level || 'Medium';
+        const color = ResQMap.priorityColor(priority);
+        const icon  = priority === 'High' ? ResQMap.pulseIcon(color) : ResQMap.circleIcon(color, 10);
+        L.marker([parseFloat(r.latitude), parseFloat(r.longitude)], { icon })
+          .bindPopup(ResQMap.popupHtml(`<b>${r.request_type || r.disaster_type || 'Disaster'}</b><br>${priority} Priority`))
+          .addTo(miniMapInstance);
+      });
+    }
+  } catch (err) {
+    console.warn('Mini-map data load failed:', err);
+  }
+}
+
 /* ── Init ── */
 document.addEventListener('DOMContentLoaded', async () => {
   // Route guard: volunteer role only
@@ -328,9 +405,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   initFilters();
   initAvailabilityToggle();
   await syncLocation(); // Detect and sync before loading requests
+  await initVolMap(); // Initialize map with synced location
   await Promise.all([loadNearbyRequests(), loadMyTasks()]);
 });
 
 window.acceptTask   = acceptTask;
 window.completeTask = completeTask;
 window.viewOnMap    = viewOnMap;
+window.updateLocationManually = updateLocationManually;

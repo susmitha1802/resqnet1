@@ -254,6 +254,12 @@ async function loadDisasters() {
         ">${r.severity}</span>
       </td>
       <td style="color:var(--text-secondary)">📍 ${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}</td>
+      <td>
+        <div style="font-size:0.75rem;line-height:1.2">
+          <strong>${r.predicted_disaster_type || 'Unknown'}</strong><br>
+          <span style="color:var(--text-muted)">${r.prediction_confidence ? r.prediction_confidence + '%' : 'N/A'}</span>
+        </div>
+      </td>
       <td style="color:var(--text-secondary)">${timeAgo(r.created_at)}</td>
       <td>
         <a href="map.html?report_id=${r.report_id}" class="btn-resq-outline" style="padding:5px 12px;font-size:0.75rem">🗺️ View On Map</a>

@@ -25,8 +25,8 @@
     .type-icon { font-size: 2rem; margin-bottom: 8px; display: block; }
     .type-name { font-weight: 700; font-size: 0.85rem; }
 
-    .help-layout { display: grid; grid-template-columns: 1fr 340px; gap: 28px; max-width: 1100px; margin: 0 auto; padding: 40px 20px; }
-    @media (max-width: 900px) { .help-layout { grid-template-columns: 1fr; } }
+    .help-layout { display: grid; grid-template-columns: 1fr 340px; gap: 28px; max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+    @media (max-width: 900px) { .help-layout { grid-template-columns: 1fr; padding: 24px 16px; } }
 
     .success-state { display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 60px 20px; }
   </style>
@@ -94,12 +94,12 @@
       <div class="resq-card" style="margin-bottom:20px">
         <h6 style="font-weight:700;margin-bottom:6px">Type of Help Required *</h6>
         <p style="color:var(--text-muted);font-size:0.82rem;margin-bottom:16px">Select the primary resource or assistance you need</p>
-        <div class="row g-3 mb-4">
-          <div class="col-4 col-sm-2" style="max-width:110px"><div class="type-card" onclick="selectType('Food')"><span class="type-icon">🍱</span><div class="type-name">Food</div></div></div>
-          <div class="col-4 col-sm-2" style="max-width:110px"><div class="type-card" onclick="selectType('Water')"><span class="type-icon">💧</span><div class="type-name">Water</div></div></div>
-          <div class="col-4 col-sm-2" style="max-width:110px"><div class="type-card" onclick="selectType('Medicine')"><span class="type-icon">💊</span><div class="type-name">Medicine</div></div></div>
-          <div class="col-4 col-sm-2" style="max-width:110px"><div class="type-card" onclick="selectType('Rescue')"><span class="type-icon">🚁</span><div class="type-name">Rescue</div></div></div>
-          <div class="col-4 col-sm-2" style="max-width:110px"><div class="type-card" onclick="selectType('Shelter')"><span class="type-icon">🏠</span><div class="type-name">Shelter</div></div></div>
+        <div class="grid-auto-fit mb-4">
+          <div class="type-card" onclick="selectType('Food')"><span class="type-icon">🍱</span><div class="type-name">Food</div></div>
+          <div class="type-card" onclick="selectType('Water')"><span class="type-icon">💧</span><div class="type-name">Water</div></div>
+          <div class="type-card" onclick="selectType('Medicine')"><span class="type-icon">💊</span><div class="type-name">Medicine</div></div>
+          <div class="type-card" onclick="selectType('Rescue')"><span class="type-icon">🚁</span><div class="type-name">Rescue</div></div>
+          <div class="type-card" onclick="selectType('Shelter')"><span class="type-icon">🏠</span><div class="type-name">Shelter</div></div>
         </div>
         <select class="resq-select" id="request-type" required style="display:none">
           <option value="">Select type</option>
@@ -152,7 +152,7 @@
         </div>
 
         <!-- Leaflet click-to-pick map -->
-        <div id="location-picker-map" style="height:200px;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border-glass);margin-bottom:10px"></div>
+        <div id="location-picker-map" style="height:300px;border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border-glass);margin-bottom:10px"></div>
 
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
           <button type="button" class="btn-resq-primary" id="get-location-btn" style="padding:9px 16px;flex-shrink:0;font-size:0.85rem">

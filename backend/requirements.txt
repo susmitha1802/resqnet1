@@ -10,4 +10,5 @@ numpy==1.26.2
 python-dotenv==1.0.0
 Werkzeug==3.0.1
 flasgger==0.9.7.1
-psycopg2-binary
+tensorflow
+keras

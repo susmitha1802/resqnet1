@@ -12,8 +12,8 @@
   <style>
     .role-selector {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
       margin-bottom: 24px;
     }
     .role-card { cursor: pointer; border-radius: 14px; padding: 14px 12px; background: var(--bg-card); border: 2px solid var(--border-glass); transition: all 0.25s ease; position: relative; text-align: center; }
@@ -33,7 +33,7 @@
     .ngo-extras { display: none; margin-top: 16px; }
     .ngo-extras.visible { display: block; }
 
-    @media (max-width: 480px) { .role-selector { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 480px) { .role-selector { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>

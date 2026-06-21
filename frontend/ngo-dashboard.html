@@ -232,7 +232,7 @@
         </div>
 
         <!-- Add Resource Form (hidden by default) -->
-        <div class="add-resource-form" id="add-resource-form">
+        <div class="add-resource-form" id="add-resource-form" style="background:var(--bg-card); padding:20px; border-radius:var(--radius-lg); margin-bottom:20px;">
           <h6 style="font-weight:700;margin-bottom:14px;color:var(--ngo-color)">➕ Add New Resource</h6>
           <div class="row g-3">
             <div class="col-md-6">
@@ -307,12 +307,12 @@
     <div class="col-lg-4">
 
       <!-- Map -->
-      <div class="resq-card" style="padding:0;overflow:hidden;margin-bottom:20px">
-        <div style="padding:16px 20px;border-bottom:1px solid var(--border-glass)">
+      <div class="resq-card" style="margin-bottom:20px">
+        <div style="margin-bottom:16px">
           <div style="font-weight:700;font-size:0.9rem">📍 Active Request Map</div>
           <div style="color:var(--text-muted);font-size:0.75rem">Live locations of pending help requests</div>
         </div>
-        <div id="ngo-map"></div>
+        <div id="ngo-map" style="border-radius:var(--radius); border:1px solid var(--border-glass)"></div>
       </div>
 
       <!-- Resource Allocation Panel -->

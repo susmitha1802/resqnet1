@@ -144,8 +144,10 @@
 
     @media (max-width: 640px) {
       .map-stats { display: none; }
-      .map-legend { bottom: 20px; right: 10px; min-width: 170px; }
-      .map-search-wrap { width: 180px; }
+      .map-legend { bottom: 10px; right: 10px; min-width: 150px; padding: 12px; }
+      .map-search-wrap { width: 100%; margin-top: 8px; }
+      .map-topbar { padding: 10px; }
+      .map-filters { width: 100%; overflow-x: auto; padding-bottom: 4px; white-space: nowrap; flex-wrap: nowrap; }
     }
 
     @keyframes ripple { 0% { transform:scale(0); opacity:0.8; } 100% { transform:scale(4); opacity:0; } }
@@ -200,7 +202,7 @@
   </div>
   <div class="map-stat-pill">
     <span style="width:8px;height:8px;border-radius:50%;background:var(--primary);animation:pulse 1.5s infinite;flex-shrink:0"></span>
-    <span><strong>Live</strong> Tracking</span>
+    <span><strong id="live-count">0</strong> Live Incidents</span>
   </div>
 </div>
 
@@ -312,20 +314,41 @@ async function loadMapData() {
       .bindPopup(popup)
       .addTo(reqCluster);
     renderedMarkers.push(marker);
+
+    const params = new URLSearchParams(location.search);
+    if (params.get('request_id') == r.request_id) {
+      window._foundTargetMarker = true;
+      setTimeout(() => {
+        reqCluster.zoomToShowLayer(marker, () => {
+          marker.openPopup();
+        });
+      }, 500);
+    }
   });
 
+  // Update all stat pills from API data
+  // High & Medium are counted from requests array above
   document.getElementById('high-count').textContent   = highCount;
   document.getElementById('medium-count').textContent = medCount;
 
+  // Volunteers Active = total registered volunteers (from API, not just GPS-mapped)
+  const totalVols = data.total_volunteers ?? (data.volunteers || []).length;
+  document.getElementById('vol-count').textContent = totalVols;
+
+  // Live Incidents = total active incidents (requests + recent reports)
+  const liveCount = data.total_active ?? ((data.requests || []).length + (data.reports || []).length);
+  const liveEl = document.getElementById('live-count');
+  if (liveEl) liveEl.textContent = liveCount;
+
   // ── Volunteers ──
   const volLayer = L.layerGroup();
-  let volCount = 0;
+  let volMapCount = 0;  // only those with GPS for the map markers
 
   (data.volunteers || []).forEach(v => {
-    const lat = parseFloat(v.last_location_lat || v.current_latitude);
-    const lng = parseFloat(v.last_location_lng || v.current_longitude);
+    const lat = parseFloat(v.last_location_lat);
+    const lng = parseFloat(v.last_location_lng);
     if (!lat || !lng || isNaN(lat) || isNaN(lng)) return;
-    volCount++;
+    volMapCount++;
 
     if (currentMapFilter !== 'All' && currentMapFilter !== 'Volunteers') return;
 
@@ -347,9 +370,6 @@ async function loadMapData() {
     renderedMarkers.push(marker);
   });
 
-  document.getElementById('vol-count').textContent = volCount;
-
-
   // ── Disaster Reports ──
   const disLayer = L.layerGroup();
   (data.reports || []).forEach(rep => {
@@ -365,6 +385,9 @@ async function loadMapData() {
         🔥 ${rep.disaster_type}
       </div>
       <div style="margin-bottom:4px">📍 ${parseFloat(rep.latitude).toFixed(4)}, ${parseFloat(rep.longitude).toFixed(4)}</div>
+      <div style="margin-bottom:4px;font-size:0.8rem;color:#E5E7EB;border-left:2px solid #F97316;padding-left:6px">
+        <strong>AI Analysis:</strong> ${rep.predicted_disaster_type || 'Unknown'} <span style="color:#9CA3AF">(${(rep.prediction_confidence !== null && rep.prediction_confidence !== undefined) ? rep.prediction_confidence + '%' : 'N/A'})</span>
+      </div>
       <div style="font-size:0.8rem;color:#9CA3AF">${rep.description || ''}</div>
     `);
 

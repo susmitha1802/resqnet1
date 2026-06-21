@@ -128,8 +128,8 @@
     <!-- Left: Request History -->
     <div>
       <!-- Filter Bar -->
-      <div class="resq-card" style="padding:20px;margin-bottom:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="resq-card" style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px">
           <h6 style="font-weight:700;margin:0">Request History</h6>
           <a href="help-request.html" class="btn-resq-outline" style="padding:7px 16px;font-size:0.8rem">+ Submit New</a>
         </div>
@@ -173,12 +173,12 @@
       </div>
 
       <!-- My Requests Timeline -->
-      <div class="resq-card" style="padding:0;overflow:hidden;margin-bottom:24px">
-        <div style="padding:20px 24px;border-bottom:1px solid var(--border-glass)">
+      <div class="resq-card" style="margin-bottom:24px">
+        <div style="margin-bottom:20px">
           <h6 style="font-weight:700;margin:0">⏳ My Requests Timeline</h6>
           <p style="color:var(--text-muted);font-size:0.82rem;margin:4px 0 0">Live progress of your submitted requests</p>
         </div>
-        <div id="timeline-container" style="padding:24px;display:flex;flex-direction:column;gap:24px">
+        <div id="timeline-container" style="display:flex;flex-direction:column;gap:24px">
           <div style="text-align:center;padding:30px;color:var(--text-muted)">Loading timeline...</div>
         </div>
       </div>
@@ -186,8 +186,8 @@
 
 
       <!-- My Disaster Reports -->
-      <div class="resq-card" style="padding:0;overflow:hidden;margin-bottom:24px">
-        <div style="padding:20px 24px;border-bottom:1px solid var(--border-glass)">
+      <div class="resq-card" style="margin-bottom:24px">
+        <div style="margin-bottom:20px">
           <h6 style="font-weight:700;margin:0">📢 My Disaster Reports</h6>
           <p style="color:var(--text-muted);font-size:0.82rem;margin:4px 0 0">Disasters you have reported to the network</p>
         </div>
@@ -198,24 +198,25 @@
                 <th>Type</th>
                 <th>Severity</th>
                 <th>Location</th>
+                <th>AI Analysis</th>
                 <th>Submitted</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody id="disasters-tbody">
-              <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)">Loading...</td></tr>
+              <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted)">Loading...</td></tr>
             </tbody>
           </table>
         </div>
       </div>
 
       <!-- AI Results Panel -->
-      <div class="resq-card" style="padding:0;overflow:hidden" id="profile-section">
-        <div style="padding:20px 24px;border-bottom:1px solid var(--border-glass);display:flex;align-items:center;justify-content:space-between">
+      <div class="resq-card" id="profile-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
           <h6 style="font-weight:700;margin:0">🤖 AI Analysis Result</h6>
           <span style="font-size:0.75rem;color:var(--text-muted)">Click "AI Result" on any request</span>
         </div>
-        <div id="ai-result-panel" class="ai-panel" style="margin:20px;border-radius:var(--radius)">
+        <div id="ai-result-panel" class="ai-panel">
           <div class="ai-panel-title">🤖 AI ANALYSIS ENGINE</div>
           <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.875rem">
             Select a request above to view AI analysis

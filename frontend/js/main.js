@@ -286,15 +286,22 @@ function initSidebarToggle() {
 
 
 /* ── Format helpers ─────────────────────────────────────────────────────────── */
+function normalizeDate(iso) {
+  if (!iso) return new Date();
+  return new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z');
+}
+
 function formatDate(iso) {
-  return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  return normalizeDate(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 function formatTime(iso) {
-  return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  return normalizeDate(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 }
 function formatDateTime(iso) { return `${formatDate(iso)}, ${formatTime(iso)}`; }
 function timeAgo(iso) {
-  const diff = Date.now() - new Date(iso).getTime();
+  if (!iso) return '';
+  const diff = Date.now() - normalizeDate(iso).getTime();
+  if (diff < 0) return 'Just now'; // Handle slight client-server sync drift
   const m = Math.floor(diff / 60000);
   if (m < 1)  return 'Just now';
   if (m < 60) return `${m}m ago`;

@@ -647,22 +647,47 @@
       const feed = document.getElementById('live-feed-container');
       if (!feed) return;
 
-      const requests = (data.requests || []).slice(0, 4); // show latest 4
-      if (!requests.length) {
+      const rawReqs = data.requests || [];
+      const rawReps = data.reports || [];
+      
+      const formattedReqs = rawReqs.map(r => ({
+        type: 'request',
+        name: r.name,
+        request_type: r.request_type,
+        priority_level: r.priority_level,
+        created_at: r.created_at,
+        number_of_people: r.number_of_people
+      }));
+      
+      const formattedReps = rawReps.map(r => ({
+        type: 'report',
+        name: 'Reported Area',
+        request_type: r.disaster_type,
+        priority_level: 'High', // General Disasters are high priority
+        created_at: r.created_at,
+        number_of_people: 'Unknown'
+      }));
+      
+      let allEvents = [...formattedReqs, ...formattedReps];
+      allEvents.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      
+      const latestEvents = allEvents.slice(0, 4);
+
+      if (!latestEvents.length) {
         feed.innerHTML = `<div class="req-mini" style="justify-content:center;color:var(--text-muted);font-size:0.82rem">📭 No active requests right now</div>`;
         return;
       }
 
-      feed.innerHTML = requests.map(r => {
+      feed.innerHTML = latestEvents.map(r => {
         const color = PRIO_COLORS[r.priority_level] || '#9CA3AF';
-        const icon  = TYPE_ICONS[r.request_type]   || '📋';
+        const icon  = r.type === 'report' ? '🔥' : (TYPE_ICONS[r.request_type] || '📋');
         const ago   = timeAgo(r.created_at);
         return `
           <div class="req-mini">
             <div class="req-mini-dot" style="background:${color};box-shadow:0 0 6px ${color}"></div>
             <div class="req-mini-text">
               <div style="font-weight:600;font-size:0.85rem">${icon} ${r.request_type} — ${r.name}</div>
-              <div style="color:var(--text-muted);font-size:0.75rem">${r.number_of_people} people • ${r.priority_level} Priority</div>
+              <div style="color:var(--text-muted);font-size:0.75rem">${r.type === 'report' ? 'Disaster Zone' : r.number_of_people + ' people'} • ${r.priority_level} Priority</div>
             </div>
             <div class="req-mini-time">${ago}</div>
           </div>`;

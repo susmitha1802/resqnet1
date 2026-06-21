@@ -65,7 +65,7 @@ class User(db.Model):
             'skills':       self.skills,
             'location':     self.location,
             'availability': self.availability,
-            'created_at':   self.created_at.isoformat() if self.created_at else None,
+            'created_at':   self.created_at.isoformat() + 'Z' if self.created_at else None,
         }
 
 
@@ -78,8 +78,10 @@ class DisasterReport(db.Model):
     user_id:       Mapped[int]           = mapped_column(Integer, ForeignKey('users.user_id'), nullable=False)
     disaster_type: Mapped[str]           = mapped_column(Enum('Flood', 'Cyclone', 'Earthquake', 'Landslide', 'Fire', name='disaster_type_enum'), nullable=False)
     description:   Mapped[str]           = mapped_column(Text, nullable=False)
-    image_path:    Mapped[Optional[str]] = mapped_column(String(500))
-    severity:      Mapped[str]           = mapped_column(Enum('Low Damage', 'Moderate Damage', 'Severe Damage', name='severity_enum'), default='Moderate Damage')
+    image_path:              Mapped[Optional[str]]   = mapped_column(String(500))
+    predicted_disaster_type: Mapped[Optional[str]]   = mapped_column(String(50))
+    prediction_confidence:   Mapped[Optional[float]] = mapped_column(Numeric(5, 2, asdecimal=False))
+    severity:                Mapped[str]             = mapped_column(Enum('Low Damage', 'Moderate Damage', 'Severe Damage', name='severity_enum'), default='Moderate Damage')
     latitude:      Mapped[Decimal]       = mapped_column(Numeric(10, 6), nullable=False)
     longitude:     Mapped[Decimal]       = mapped_column(Numeric(10, 6), nullable=False)
     created_at:    Mapped[datetime]      = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -93,16 +95,20 @@ class DisasterReport(db.Model):
         description:   str,
         latitude:      float,
         longitude:     float,
-        image_path:    Optional[str] = None,
-        severity:      str = 'Moderate Damage',
+        image_path:              Optional[str] = None,
+        predicted_disaster_type: Optional[str] = None,
+        prediction_confidence:   Optional[float] = None,
+        severity:                str = 'Moderate Damage',
     ) -> None:
         self.user_id       = user_id
         self.disaster_type = disaster_type
         self.description   = description
-        self.latitude      = Decimal(str(latitude))
-        self.longitude     = Decimal(str(longitude))
-        self.image_path    = image_path
-        self.severity      = severity
+        self.latitude                = Decimal(str(latitude))
+        self.longitude               = Decimal(str(longitude))
+        self.image_path              = image_path
+        self.predicted_disaster_type = predicted_disaster_type
+        self.prediction_confidence   = prediction_confidence
+        self.severity                = severity
 
     def to_dict(self) -> dict:
         return {
@@ -111,10 +117,12 @@ class DisasterReport(db.Model):
             'disaster_type': self.disaster_type,
             'description':   self.description,
             'image_path':    self.image_path,
+            'predicted_disaster_type': self.predicted_disaster_type,
+            'prediction_confidence': self.prediction_confidence,
             'severity':      self.severity,
             'latitude':      float(self.latitude),
             'longitude':     float(self.longitude),
-            'created_at':    self.created_at.isoformat() if self.created_at else None,
+            'created_at':    self.created_at.isoformat() + 'Z' if self.created_at else None,
             'user_name':     self.user.name if self.user_id else None,
         }
 
@@ -191,8 +199,8 @@ class HelpRequest(db.Model):
             'status':           self.status,
             'latitude':         float(self.latitude),
             'longitude':        float(self.longitude),
-            'created_at':       self.created_at.isoformat() if self.created_at else None,
-            'updated_at':       self.updated_at.isoformat() if self.updated_at else None,
+            'created_at':       self.created_at.isoformat() + 'Z' if self.created_at else None,
+            'updated_at':       self.updated_at.isoformat() + 'Z' if self.updated_at else None,
             'assigned_volunteer': assigned_vol_name,
         }
 
@@ -234,7 +242,9 @@ class Volunteer(db.Model):
             'assigned_tasks':      self.assigned_tasks,
             'completed_tasks':     self.completed_tasks,
             'rating':              float(self.rating) if self.rating else 5.0,
-            'user_name':           self.user.name if self.user_id else None,
+            'user_name':           self.user.name if self.user else None,
+            'last_location_lat':   float(self.last_location_lat) if self.last_location_lat is not None else None,
+            'last_location_lng':   float(self.last_location_lng) if self.last_location_lng is not None else None,
         }
 
 
@@ -287,8 +297,8 @@ class ReliefTask(db.Model):
             'completion_notes':     self.completion_notes,
             'verification_status':  self.verification_status,
             'verified_by_admin_id': self.verified_by_admin_id,
-            'assigned_at':          self.assigned_at.isoformat() if self.assigned_at else None,
-            'completed_at':         self.completed_at.isoformat() if self.completed_at else None,
+            'assigned_at':          self.assigned_at.isoformat() + 'Z' if self.assigned_at else None,
+            'completed_at':         self.completed_at.isoformat() + 'Z' if self.completed_at else None,
         }
 
 # ── Contact Message ────────────────────────────────────────────────────────────
@@ -326,5 +336,5 @@ class ContactMessage(db.Model):
             'subject':    self.subject,
             'message':    self.message,
             'status':     self.status,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'created_at': self.created_at.isoformat() + 'Z' if self.created_at else None,
         }

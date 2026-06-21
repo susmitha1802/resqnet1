@@ -85,8 +85,8 @@
 /* Role selection cards */
 .role-selector {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
   margin-bottom: 32px;
   animation: slideInUp 0.7s ease;
 }
@@ -156,12 +156,11 @@
 }
 .role-card.selected .role-badge { opacity: 1; transform: scale(1); }
 
-/* Auth form container */
 .auth-form-container {
   background: var(--bg-card);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-xl);
-  padding: 40px;
+  padding: 32px;
   animation: slideInUp 0.8s ease;
   position: relative;
   overflow: hidden;
