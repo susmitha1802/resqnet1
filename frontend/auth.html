@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ResQNet — Sign In or Register</title>
-  <meta name="description" content="Sign in or create your ResQNet account as a victim, volunteer, NGO, or admin.">
+  <meta name="description" content="Sign in or create your ResQNet account as a reporter, volunteer, NGO, or admin.">
   <link rel="stylesheet" href="css/styles.css">
   <style>
     /* Auth page full-screen */
@@ -233,9 +233,9 @@
     <div style="margin-bottom:22px">
       <div class="label-upper mb-12">I am a...</div>
       <div class="role-grid">
-        <div class="role-card selected" id="role-victim" onclick="selectRole('victim')">
+        <div class="role-card selected" id="role-reporter" onclick="selectRole('reporter')">
           <div class="role-card-icon">👤</div>
-          <div class="role-card-label">Victim</div>
+          <div class="role-card-label">Reporter</div>
           <div class="role-card-desc">Need help / Affected</div>
         </div>
         <div class="role-card" id="role-volunteer" onclick="selectRole('volunteer')">
@@ -436,7 +436,7 @@
   }
 
   /* ── Role Selector ── */
-  let currentRole = 'victim';
+  let currentRole = 'reporter';
   function selectRole(role) {
     document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
     document.getElementById('role-' + role).classList.add('selected');
@@ -449,7 +449,7 @@
     // Expose globally for auth.js
     window.selectedRole = role;
   }
-  window.selectedRole = 'victim';
+  window.selectedRole = 'reporter';
 
   /* ── Password Visibility Toggle ── */
   function togglePassword(inputId, icon) {

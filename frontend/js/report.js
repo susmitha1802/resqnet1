@@ -20,7 +20,7 @@ function selectDisasterType(type) {
   const hints = {
     Flood: { icon: '🌊', desc: 'Report water levels, affected areas, and number of trapped people.' },
     Cyclone: { icon: '🌀', desc: 'Mention wind intensity, structural damage, and evacuation needs.' },
-    Earthquake: { icon: '🌍', desc: 'Describe magnitude impact, building collapses, and trapped victims.' },
+    Earthquake: { icon: '🌍', desc: 'Describe magnitude impact, building collapses, and trapped reporters.' },
     Landslide: { icon: '⛰️', desc: 'Report blocked roads, buried structures, and safe zones.' },
     Fire: { icon: '🔥', desc: 'Indicate fire spread area, evacuation status, and proximity to structures.' }
   };

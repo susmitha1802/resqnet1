@@ -24,7 +24,7 @@ class User(db.Model):
     email:        Mapped[str]            = mapped_column(String(150), nullable=False, unique=True)
     phone:        Mapped[str]            = mapped_column(String(20),  nullable=False)
     password:     Mapped[str]            = mapped_column(String(255), nullable=False)
-    role:         Mapped[str]            = mapped_column(Enum('victim', 'volunteer', 'ngo', 'admin', name='user_role'), default='victim')
+    role:         Mapped[str]            = mapped_column(Enum('reporter', 'volunteer', 'ngo', 'admin', name='user_role'), default='reporter')
     skills:       Mapped[Optional[str]]  = mapped_column(Text)
     location:     Mapped[Optional[str]]  = mapped_column(String(200))
     availability: Mapped[str]            = mapped_column(Enum('available', 'unavailable', name='user_availability'), default='available')
@@ -41,7 +41,7 @@ class User(db.Model):
         email:        str,
         phone:        str,
         password:     str,
-        role:         str = 'victim',
+        role:         str = 'reporter',
         skills:       Optional[str] = None,
         location:     Optional[str] = None,
         availability: str = 'available',
@@ -394,4 +394,77 @@ class ContactMessage(db.Model):
             'message':    self.message,
             'status':     self.status,
             'created_at': self.created_at.isoformat() + 'Z' if self.created_at else None,
+        }
+
+class WeatherAlert(db.Model):
+    __tablename__ = 'weather_alerts'
+
+    alert_id        : Mapped[int]            = mapped_column(Integer, primary_key=True, autoincrement=True)
+    source          : Mapped[str]            = mapped_column(String(50), nullable=False, default='OpenWeatherMap')
+    alert_type      : Mapped[str]            = mapped_column(Enum('Cyclone','Flood','Heatwave','Storm','Earthquake','Other', name='alert_type_enum'), nullable=False)
+    severity        : Mapped[str]            = mapped_column(Enum('Watch','Warning','Emergency', name='alert_severity_enum'), nullable=False, default='Watch')
+    description     : Mapped[str]            = mapped_column(Text, nullable=False)
+    affected_lat    : Mapped[Decimal]        = mapped_column(Numeric(10,6), nullable=False)
+    affected_lng    : Mapped[Decimal]        = mapped_column(Numeric(10,6), nullable=False)
+    affected_radius_km: Mapped[int]          = mapped_column(Integer, default=50)
+    issued_at       : Mapped[datetime]       = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    expires_at      : Mapped[Optional[datetime]] = mapped_column(DateTime)
+    notified_at     : Mapped[Optional[datetime]] = mapped_column(DateTime)
+
+    pings: Mapped[list['PreparednessPing']] = relationship('PreparednessPing', back_populates='alert', lazy='dynamic')
+
+    def __init__(self, alert_type, description, affected_lat, affected_lng,
+                 severity='Watch', source='OpenWeatherMap', affected_radius_km=50,
+                 expires_at=None):
+        self.alert_type = alert_type
+        self.description = description
+        self.affected_lat = Decimal(str(affected_lat))
+        self.affected_lng = Decimal(str(affected_lng))
+        self.severity = severity
+        self.source = source
+        self.affected_radius_km = affected_radius_km
+        self.expires_at = expires_at
+
+    def to_dict(self):
+        return {
+            'alert_id': self.alert_id,
+            'source': self.source,
+            'alert_type': self.alert_type,
+            'severity': self.severity,
+            'description': self.description,
+            'affected_lat': float(self.affected_lat),
+            'affected_lng': float(self.affected_lng),
+            'affected_radius_km': self.affected_radius_km,
+            'issued_at': self.issued_at.isoformat()+'Z' if self.issued_at else None,
+            'expires_at': self.expires_at.isoformat()+'Z' if self.expires_at else None,
+            'notified_at': self.notified_at.isoformat()+'Z' if self.notified_at else None,
+        }
+
+
+class PreparednessPing(db.Model):
+    __tablename__ = 'preparedness_pings'
+
+    ping_id        : Mapped[int]            = mapped_column(Integer, primary_key=True, autoincrement=True)
+    alert_id       : Mapped[int]            = mapped_column(Integer, ForeignKey('weather_alerts.alert_id'), nullable=False)
+    user_id        : Mapped[int]            = mapped_column(Integer, ForeignKey('users.user_id'), nullable=False)
+    status         : Mapped[str]            = mapped_column(Enum('Sent','Acknowledged','Unavailable', name='ping_status_enum'), default='Sent')
+    sent_at        : Mapped[datetime]       = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    acknowledged_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+
+    alert: Mapped[WeatherAlert] = relationship('WeatherAlert', back_populates='pings')
+    user : Mapped[User]         = relationship('User')
+
+    def __init__(self, alert_id, user_id):
+        self.alert_id = alert_id
+        self.user_id  = user_id
+
+    def to_dict(self):
+        return {
+            'ping_id': self.ping_id,
+            'alert_id': self.alert_id,
+            'user_id': self.user_id,
+            'status': self.status,
+            'sent_at': self.sent_at.isoformat()+'Z' if self.sent_at else None,
+            'acknowledged_at': self.acknowledged_at.isoformat()+'Z' if self.acknowledged_at else None,
+            'user_name': self.user.name if self.user else None,
         }

@@ -16,7 +16,7 @@ function populateUserInfo() {
   const unEl = document.getElementById('sidebar-username');
   if (unEl) unEl.textContent = name;
   const urEl = document.getElementById('sidebar-userrole');
-  if (urEl) urEl.textContent = 'Disaster Victim';
+  if (urEl) urEl.textContent = 'Disaster Reporter';
   const avEl = document.getElementById('sidebar-avatar');
   if (avEl) avEl.textContent = initials;
 
@@ -69,9 +69,6 @@ function renderRequestTable(requests) {
       <td>${statusBadge(r.status)}</td>
       <td style="color:var(--text-secondary);font-size:0.82rem">${timeAgo(r.created_at)}</td>
       <td>
-        <button class="btn-resq-outline" style="padding:5px 14px;font-size:0.78rem" onclick="showAIResult(${r.request_id})">
-          🤖 AI Result
-        </button>
       </td>
     </tr>
   `).join('');
@@ -112,7 +109,7 @@ function renderTimeline(requests) {
     const assignedTo = r.assigned_volunteer ? `🧑‍🤝‍🧑 Assigned to: <strong>${r.assigned_volunteer}</strong>` : `⏳ Waiting for volunteer`;
     
     return `
-      <div style="border:1px solid var(--border-glass);border-radius:var(--radius);padding:16px;background:var(--bg-card-2);cursor:pointer;transition:var(--transition);" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border-glass)'" onclick="showAIResult(${r.request_id})">
+      <div style="border:1px solid var(--border-glass);border-radius:var(--radius);padding:16px;background:var(--bg-card-2);cursor:pointer;transition:var(--transition);" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border-glass)'">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
           <div>
             <div style="font-weight:700;font-size:1.05rem;display:flex;align-items:center;gap:8px">
@@ -130,59 +127,6 @@ function renderTimeline(requests) {
       </div>
     `;
   }).join('');
-}
-
-/* ── Show AI Result Panel ── */
-function showAIResult(requestId) {
-  const req = currentRequests.find(r => r.request_id === requestId);
-  if (!req) return;
-  selectedRequest = req;
-
-  const panel = document.getElementById('ai-result-panel');
-  if (!panel) return;
-
-  const priority  = req.priority_level || 'Medium';
-  const severity  = req.severity       || 'N/A';
-  const isDup     = req.is_duplicate   || false;
-
-  const priorityColor = { High: '#EF4444', Medium: '#F59E0B', Low: '#10B981' }[priority] || '#9CA3AF';
-  const severityColor = {
-    'Severe Damage':   '#EF4444',
-    'Moderate Damage': '#F59E0B',
-    'Low Damage':      '#10B981'
-  }[severity] || '#9CA3AF';
-
-  // Build resource forecast summary from data
-  const p    = req.number_of_people || 1;
-  const mult = priority === 'High' ? 1.5 : 1.0;
-  let forecastText = 'Basic supplies required';
-  if (req.request_type === 'Rescue')   forecastText = `${Math.max(2, Math.round(p / 2))} rescue personnel • ${Math.round(p * 2)} meal packets/day`;
-  if (req.request_type === 'Food')     forecastText = `${Math.round(p * 3 * mult)} meal packets/day • ${Math.round(p * 2)}L water/day`;
-  if (req.request_type === 'Water')    forecastText = `${Math.round(p * 5 * mult)}L water/day`;
-  if (req.request_type === 'Medicine') forecastText = `${Math.max(1, Math.round(p / 3))} medical kits • 7 day support`;
-  if (req.request_type === 'Shelter')  forecastText = `${Math.max(1, Math.round(p / 5))} shelter units • ${Math.round(p * 3)} meal packets/day`;
-
-  panel.innerHTML = `
-    <div class="ai-panel-title">🤖 AI Analysis — #${req.request_id}</div>
-    <div class="ai-metric">
-      <span class="ai-metric-label">🚨 Emergency Priority</span>
-      <span class="ai-metric-value" style="color:${priorityColor}">${priority}</span>
-    </div>
-    <div class="ai-metric">
-      <span class="ai-metric-label">📊 Damage Severity</span>
-      <span class="ai-metric-value" style="color:${severityColor}">${severity !== 'N/A' ? severity : '—'}</span>
-    </div>
-    <div class="ai-metric">
-      <span class="ai-metric-label">🔍 Duplicate Detection</span>
-      <span class="ai-metric-value" style="color:${isDup ? '#9CA3AF' : '#10B981'}">${isDup ? '⚠️ Duplicate Found' : '✅ Unique Request'}</span>
-    </div>
-    <div class="ai-metric">
-      <span class="ai-metric-label">📦 Resource Forecast</span>
-      <span class="ai-metric-value" style="font-size:0.8rem;text-align:right;max-width:180px">${forecastText}</span>
-    </div>
-  `;
-
-  panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 /* ── Filters ── */
@@ -218,14 +162,6 @@ async function loadRequests() {
   updateStats();
   renderRequestTable(currentRequests);
   renderTimeline(currentRequests);
-
-  // Show AI panel for the first request if any
-  if (currentRequests.length > 0) {
-    setTimeout(() => showAIResult(currentRequests[0].request_id), 600);
-  } else {
-    const panel = document.getElementById('ai-result-panel');
-    if (panel) panel.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted)">No requests to analyze</div>';
-  }
 }
 
 /* ── Fetch Disaster Reports ── */
@@ -270,12 +206,10 @@ async function loadDisasters() {
 
 /* ── Init ── */
 document.addEventListener('DOMContentLoaded', () => {
-  // Route guard: victim role only
-  if (!Session.requireRole('victim')) return;
+  // Route guard: reporter role only
+  if (!Session.requireRole('reporter')) return;
   populateUserInfo();
   loadRequests();
   loadDisasters();
   initFilters();
 });
-
-window.showAIResult = showAIResult;

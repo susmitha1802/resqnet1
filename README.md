@@ -1,13 +1,13 @@
 # ResQNet — Disaster Relief Coordination Platform 🚨🌍
 
-ResQNet is a comprehensive disaster relief and coordination platform designed to bridge the gap between victims, volunteers, NGOs, and administrative authorities during critical emergencies. It leverages real-time map integration, predictive AI, and dynamic resource allocation to save lives efficiently.
+ResQNet is a comprehensive disaster relief and coordination platform designed to bridge the gap between reporters, volunteers, NGOs, and administrative authorities during critical emergencies. It leverages real-time map integration, predictive AI, and dynamic resource allocation to save lives efficiently.
 
 ## 🚀 Features
 
-* **Multi-Role Dashboards:** Specialized interfaces for Victims, Volunteers, NGOs, and Administrators.
+* **Multi-Role Dashboards:** Specialized interfaces for Reporters, Volunteers, NGOs, and Administrators.
 * **Live GIS Mapping:** Real-time Leaflet/OpenStreetMap integration tracking SOS requests, volunteer locations, and disaster zone radii dynamically.
 * **AI Disaster Classification:** An integrated Convolutional Neural Network (CNN) powered by TensorFlow automatically classifies disaster imagery (e.g., Cyclone, Earthquake, Flood, Wildfire) and outputs confidence scoring to rapidly inform relief priorities.
-* **Smart SOS Workflows:** Victims can broadcast geolocation-tagged requests (Food, Water, Shelter, Rescue) which are prioritized and routed to nearby volunteers.
+* **Smart SOS Workflows:** Reporters can broadcast geolocation-tagged requests (Food, Water, Shelter, Rescue) which are prioritized and routed to nearby volunteers.
 * **Task Verification System:** Volunteers upload cryptographic or visual proof upon completing a rescue task, which administrators verify via a dedicated dashboard.
 * **NGO Resource Allocation:** Dynamic inventory tracking and resource dispatching for large-scale relief groups.
 * **Role-Based Access Control (RBAC):** Secure JWT authentication protecting sensitive endpoints and routes.

@@ -16,7 +16,7 @@ from flasgger import Swagger  # type: ignore[import-untyped]
 
 from config import Config
 from extensions import db, jwt
-from routes import auth_bp, reports_bp, help_bp, volunteers_bp, admin_bp, ngo_bp, contact_bp
+from routes import auth_bp, reports_bp, help_bp, volunteers_bp, admin_bp, ngo_bp, contact_bp, alerts_bp, preparedness_bp, map_risk_bp
 
 
 # ── Swagger / OpenAPI config ───────────────────────────────────────────────────
@@ -93,7 +93,7 @@ SWAGGER_TEMPLATE = {
                             "email":        {"type": "string",  "example": "priya@example.com"},
                             "phone":        {"type": "string",  "example": "9876543210"},
                             "password":     {"type": "string",  "example": "secure123"},
-                            "role":         {"type": "string",  "enum": ["victim","volunteer","ngo","admin"], "example": "victim"},
+                            "role":         {"type": "string",  "enum": ["reporter","volunteer","ngo","admin"], "example": "reporter"},
                             "admin_secret_code": {"type": "string", "example": "RESQNET_ADMIN_2024", "description": "Required only when role=admin"},
                             "org_name":     {"type": "string",  "example": "Relief India Foundation", "description": "Required when role=ngo"},
                             "org_type":     {"type": "string",  "example": "Disaster Relief NGO"},
@@ -398,6 +398,9 @@ def create_app(config_class=Config) -> Flask:
     app.register_blueprint(admin_bp)
     app.register_blueprint(ngo_bp)
     app.register_blueprint(contact_bp)
+    app.register_blueprint(alerts_bp)
+    app.register_blueprint(preparedness_bp)
+    app.register_blueprint(map_risk_bp)
 
     # ── Create Tables ─────────────────────────────────────────────────────────
     with app.app_context():

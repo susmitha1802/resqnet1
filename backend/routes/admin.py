@@ -40,7 +40,7 @@ def admin_dashboard():
         'duplicate':         HelpRequest.query.filter_by(is_duplicate=True).count(),
         'disaster_reports':  DisasterReport.query.count(),
         'total_volunteers':  Volunteer.query.count(),
-        'total_victims':     User.query.filter_by(role='victim').count(),
+        'total_victims':     User.query.filter_by(role='reporter').count(),
         'total_ngos':        User.query.filter_by(role='ngo').count(),
         'relief_tasks':      ReliefTask.query.count(),
     }

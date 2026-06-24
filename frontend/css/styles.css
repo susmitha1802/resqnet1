@@ -1068,7 +1068,7 @@ h1,h2,h3,h4,h5,h6 {
   border-radius: 3px; font-size: 0.72rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.04em; margin-top: 4px;
 }
-.profile-role.victim    { background: rgba(0,180,255,0.12); color: var(--accent-blue); border: 1px solid rgba(0,180,255,0.2); }
+.profile-role.reporter    { background: rgba(0,180,255,0.12); color: var(--accent-blue); border: 1px solid rgba(0,180,255,0.2); }
 .profile-role.volunteer { background: rgba(0,230,118,0.12); color: var(--accent-green); border: 1px solid rgba(0,230,118,0.2); }
 .profile-role.admin     { background: rgba(255,45,85,0.12); color: var(--accent-red); border: 1px solid rgba(255,45,85,0.2); }
 .profile-role.ngo       { background: rgba(180,77,255,0.12); color: var(--accent-purple); border: 1px solid rgba(180,77,255,0.2); }

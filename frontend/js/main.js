@@ -83,7 +83,7 @@ const Session = {
       admin: 'admin-dashboard.html',
       volunteer: 'volunteer-dashboard.html',
       ngo: 'ngo-dashboard.html',
-      victim: 'user-dashboard.html',
+      reporter: 'user-dashboard.html',
     };
     location.href = map[role] || 'user-dashboard.html';
   },
@@ -112,7 +112,7 @@ const Session = {
 
   /**
    * Shorthand role guard — returns false and redirects if role doesn't match.
-   * Usage: Session.requireRole('victim')
+   * Usage: Session.requireRole('reporter')
    */
   requireRole(role) {
     return this.requireLogin(role);
@@ -187,7 +187,7 @@ function updateNavbarAuth() {
         admin: 'admin-dashboard.html',
         volunteer: 'volunteer-dashboard.html',
         ngo: 'ngo-dashboard.html',
-        victim: 'user-dashboard.html',
+        reporter: 'user-dashboard.html',
       };
       dashBtn.href = roleMap[user.role] || 'user-dashboard.html';
       dashBtn.textContent = `📊 My Dashboard`;

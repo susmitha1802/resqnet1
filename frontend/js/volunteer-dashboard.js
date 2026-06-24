@@ -406,10 +406,70 @@ document.addEventListener('DOMContentLoaded', async () => {
   initAvailabilityToggle();
   await syncLocation(); // Detect and sync before loading requests
   await initVolMap(); // Initialize map with synced location
-  await Promise.all([loadNearbyRequests(), loadMyTasks()]);
+  await Promise.all([loadNearbyRequests(), loadMyTasks(), loadPreparednessAlerts()]);
 });
+
+/* ── Preparedness Alerts ── */
+async function loadPreparednessAlerts() {
+  const token = getToken();
+  try {
+    const res = await fetch(`${API_BASE}/preparedness/my-pings`, {
+      headers: { 'Authorization': \`Bearer \${token}\` }
+    });
+    const data = await res.json();
+    if (!data.success) return;
+    
+    const pending = data.pings.filter(p => p.status === 'Sent');
+    if (pending.length === 0) return;
+    
+    const ping = pending[0];
+    const icons = { Cyclone: '🌀', Flood: '🌊', Storm: '⛈', Heatwave: '🔥', Earthquake: '🌍', Other: '⚠' };
+    const icon = icons[ping.alert_type] || '⚠';
+    
+    const bannerHTML = \`
+      <div id="preparedness-banner" style="background:var(--bg-card);border:1px solid var(--accent-red);border-radius:var(--radius);padding:20px;margin-bottom:20px;box-shadow:var(--glow-red-sm)">
+        <h3 style="color:var(--accent-red);margin-bottom:8px;font-size:1.1rem">🔔 PREPAREDNESS ALERT — \${icon} \${ping.alert_type} \${ping.severity}</h3>
+        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:16px">\${ping.description}</p>
+        <div style="font-weight:600;margin-bottom:12px">Please confirm your availability status:</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn-resq" style="background:var(--accent-green);border-color:var(--accent-green);color:#fff" onclick="respondToPing(\${ping.ping_id}, 'Acknowledged')">✓ I'm Ready & Available</button>
+          <button class="btn-resq-outline" style="border-color:var(--border-subtle)" onclick="respondToPing(\${ping.ping_id}, 'Unavailable')">✗ Unavailable Right Now</button>
+        </div>
+        \${pending.length > 1 ? \`<div style="font-size:0.8rem;color:var(--text-muted);margin-top:12px">\${pending.length - 1} more alert(s) pending</div>\` : ''}
+      </div>
+    \`;
+    
+    const anchor = document.getElementById('availability-banner');
+    if (anchor && !document.getElementById('preparedness-banner')) {
+      anchor.insertAdjacentHTML('beforebegin', bannerHTML);
+    }
+  } catch(e) { console.error('Failed to load preparedness pings', e); }
+}
+
+async function respondToPing(pingId, status) {
+  const token = getToken();
+  try {
+    const res = await fetch(\`\${API_BASE}/preparedness/ping/\${pingId}\`, {
+      method: 'PUT',
+      headers: { 'Authorization': \`Bearer \${token}\`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    const data = await res.json();
+    if (data.success) {
+      Toast.show('Status updated successfully!', 'success');
+      const banner = document.getElementById('preparedness-banner');
+      if (banner) banner.remove();
+      loadPreparednessAlerts();
+    } else {
+      Toast.show(data.message || 'Failed to update status', 'danger');
+    }
+  } catch(e) {
+    Toast.show('Error connecting to server', 'danger');
+  }
+}
 
 window.acceptTask = acceptTask;
 window.submitProof = submitProof;
 window.viewOnMap = viewOnMap;
 window.updateLocationManually = updateLocationManually;
+window.respondToPing = respondToPing;

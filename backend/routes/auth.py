@@ -1,6 +1,6 @@
 """
 ResQNet — Auth Routes Blueprint
-POST /register  — create account (victim / volunteer / ngo / admin)
+POST /register  — create account (reporter / volunteer / ngo / admin)
 POST /login     — authenticate and receive JWT
 GET  /profile   — get current user profile
 POST /seed-demo-users — (DEBUG only) seed demo accounts into DB
@@ -18,7 +18,7 @@ auth_bp = Blueprint('auth', __name__)
 # Admin secret code (set ADMIN_SECRET_CODE in .env to override)
 ADMIN_SECRET_CODE = os.getenv('ADMIN_SECRET_CODE', 'RESQNET_ADMIN_2024')
 
-VALID_ROLES = ('victim', 'volunteer', 'ngo', 'admin')
+VALID_ROLES = ('reporter', 'volunteer', 'ngo', 'admin')
 
 
 def _success(data=None, message='OK', status=200):
@@ -38,7 +38,7 @@ def register():
     email    = data.get('email', '').strip().lower()
     phone    = data.get('phone', '').strip()
     password = data.get('password', '')
-    role     = data.get('role', 'victim').strip().lower()
+    role     = data.get('role', 'reporter').strip().lower()
 
     # ── Validation ─────────────────────────────────────────────────────────────
     if not all([name, email, phone, password]):
@@ -130,7 +130,7 @@ def seed_demo_users():
     Only available in DEBUG mode.
 
     Demo accounts created:
-      user@demo.com    / demo123  → victim
+      user@demo.com    / demo123  → reporter
       vol@demo.com     / demo123  → volunteer
       ngo@demo.com     / demo123  → ngo
       admin@demo.com   / admin123 → admin
@@ -145,7 +145,7 @@ def seed_demo_users():
             'email': 'user@demo.com',
             'phone': '9876543210',
             'password': 'demo123',
-            'role': 'victim',
+            'role': 'reporter',
         },
         {
             'name': 'Arjun Kumar',
@@ -207,7 +207,7 @@ def seed_demo_users():
         'created': created,
         'skipped': skipped,
         'credentials': [
-            {'email': 'user@demo.com',  'password': 'demo123',  'role': 'victim'},
+            {'email': 'user@demo.com',  'password': 'demo123',  'role': 'reporter'},
             {'email': 'vol@demo.com',   'password': 'demo123',  'role': 'volunteer'},
             {'email': 'ngo@demo.com',   'password': 'demo123',  'role': 'ngo'},
             {'email': 'admin@demo.com', 'password': 'admin123', 'role': 'admin'},

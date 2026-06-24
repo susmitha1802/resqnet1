@@ -9,13 +9,6 @@ let aiPreviewShown = false;
 let pickerMap = null;
 
 /* ── AI Priority Preview ── */
-function computeAIPriority(requestType, people) {
-  if (requestType === 'Rescue' || requestType === 'Medicine') return { level: 'High', color: '#EF4444', reason: 'Life-threatening emergency' };
-  if (parseInt(people) > 10) return { level: 'High', color: '#EF4444', reason: 'Large number of affected people' };
-  if (requestType === 'Food' || requestType === 'Water') return { level: 'Medium', color: '#F59E0B', reason: 'Essential supplies needed' };
-  return { level: 'Low', color: '#10B981', reason: 'General assistance required' };
-}
-
 function updateAIPreview() {
   const type = document.getElementById('request-type')?.value;
   const people = document.getElementById('people-count')?.value;
@@ -35,14 +28,6 @@ function updateAIPreview() {
   document.getElementById('ai-priority-level').textContent = level;
   document.getElementById('ai-priority-level').style.color = color;
   document.getElementById('ai-priority-reason').textContent = reason;
-
-  // Forecast
-  const foodPkts = Math.ceil(parseInt(people) * 1.5);
-  const waterLits = parseInt(people) * 3;
-  const medKits = Math.ceil(parseInt(people) / 5);
-  document.getElementById('ai-food-forecast').textContent = `${foodPkts} meal packets/day`;
-  document.getElementById('ai-water-forecast').textContent = `${waterLits}L drinking water/day`;
-  document.getElementById('ai-medical-forecast').textContent = `${medKits} first-aid kits`;
 }
 
 /* ── Set Location Fields ── */
@@ -194,7 +179,6 @@ async function handleHelpRequest(e) {
 
   // ── Use the server-computed priority/status as the source of truth ──
   const serverPriority = res.request?.priority_level || level;
-  const isDuplicate = res.request?.status === 'Duplicate' || res.ai?.is_duplicate === true;
 
   document.getElementById('help-form').style.display = 'none';
   document.getElementById('success-state').style.display = 'flex';
@@ -206,14 +190,7 @@ async function handleHelpRequest(e) {
     mapLink.href = `map.html?request_id=${res.request.request_id}`;
   }
 
-  if (isDuplicate) {
-    // Submission succeeded, but it was flagged as a duplicate of an existing
-    // active request nearby — make this clearly visible instead of presenting
-    // it identically to a brand-new, actively-routed request.
-    Toast.show('A similar request from your area was already submitted recently. This one has been recorded as a duplicate and will not be separately dispatched.', 'warning', 6000);
-  } else {
-    Toast.show(`Help request submitted! Priority: ${serverPriority} 🚨`, serverPriority === 'High' ? 'danger' : 'success');
-  }
+  Toast.show(`Help request submitted! Priority: ${serverPriority} 🚨`, serverPriority === 'High' ? 'danger' : 'success');
 }
 
 /* ── Init ── */

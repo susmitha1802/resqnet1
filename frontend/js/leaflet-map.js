@@ -299,3 +299,80 @@ window.ResQMap = {
   `;
   document.head.appendChild(style);
 })();
+
+/* ── Phase 6: Risk Zones & NGO Depots ───────────────────────────────────── */
+async function loadRiskZones(mapInstance) {
+  try {
+    const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : 'http://127.0.0.1:5000';
+    const res = await fetch(`${apiBase}/map/risk-zones`);
+    const data = await res.json();
+    if (!data.zones) return;
+
+    const colors = { High: '#ef4444', Medium: '#f59e0b', Low: '#22c55e' };
+    const icons = { Cyclone: '🌀', Flood: '🌊', Heatwave: '☀️', Storm: '⛈️' };
+
+    data.zones.forEach(zone => {
+      const color = colors[zone.risk_level] || '#22c55e';
+      const icon = icons[zone.alert_type] || '⚠️';
+
+      // Circle
+      L.circle([zone.lat, zone.lng], {
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.15,
+        opacity: 0.6,
+        weight: 2,
+        radius: zone.radius_km * 1000
+      }).bindPopup(ResQMap.popupHtml(`<b>${icon} ${zone.alert_type} — ${zone.risk_level} Risk</b><br>${zone.description}`)).addTo(mapInstance);
+
+      // Center marker
+      const centerIcon = L.divIcon({
+        className: '',
+        html: `<div style="
+          width:24px;height:24px;border-radius:50%;
+          background:${color};border:2px solid white;
+          box-shadow:0 0 8px ${color};
+          display:flex;align-items:center;justify-content:center;
+          font-size:12px;color:white;
+        ">${icon}</div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+      L.marker([zone.lat, zone.lng], { icon: centerIcon }).bindTooltip(`${icon} ${zone.alert_type} (${zone.risk_level} Risk)`).addTo(mapInstance);
+    });
+  } catch (err) {
+    console.warn('Could not load risk zones', err);
+  }
+}
+
+async function addNgoDepotMarkers(mapInstance) {
+  try {
+    const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : 'http://127.0.0.1:5000';
+    const res = await fetch(`${apiBase}/ngo/locations`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.locations) return;
+
+    data.locations.forEach(ngo => {
+      if (!ngo.latitude || !ngo.longitude) return;
+      
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="
+          width:28px;height:28px;border-radius:6px;
+          background:#1F2937;border:2px solid #60A5FA;
+          box-shadow:0 0 8px rgba(96,165,250,0.5);
+          display:flex;align-items:center;justify-content:center;
+          font-size:14px;
+        ">🏢</div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
+      });
+      L.marker([parseFloat(ngo.latitude), parseFloat(ngo.longitude)], { icon })
+        .bindPopup(ResQMap.popupHtml(`<b>🏢 ${ngo.name}</b><br>Relief Depot & Organization HQ`))
+        .addTo(mapInstance);
+    });
+  } catch (err) {
+    console.warn('Could not load NGO locations', err);
+  }
+}

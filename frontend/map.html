@@ -147,6 +147,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   await loadMapData();
   setInterval(loadMapData, 15_000);
+
+  loadRiskZones(map);
+  addNgoDepotMarkers(map);
 });
 
 let currentMapFilter = 'All';

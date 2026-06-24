@@ -226,50 +226,6 @@ async function loadAnalytics() {
   }
 }
 
-/* ── Resource Distribution Bars — loaded from forecast ── */
-function renderDistributionBars(requests) {
-  // Aggregate forecasted resources from all pending/accepted requests
-  let food = 0, water = 0, medical = 0, rescue = 0, shelter = 0;
-  requests.forEach(r => {
-    // Estimate from priority
-    const mult = r.priority_level === 'High' ? 1.5 : 1.0;
-    const p = r.number_of_people || 1;
-    if (r.request_type === 'Food') { food += Math.round(p * 3 * mult); water += Math.round(p * 2); }
-    if (r.request_type === 'Water') { water += Math.round(p * 5 * mult); }
-    if (r.request_type === 'Medicine') { medical += Math.max(1, Math.round(p / 3)); }
-    if (r.request_type === 'Rescue') { rescue += Math.max(2, Math.round(p / 2)); medical += Math.max(1, Math.round(p / 5)); }
-    if (r.request_type === 'Shelter') { shelter += Math.max(1, Math.round(p / 5)); }
-  });
-
-  const items = [
-    { label: 'Food Packets', value: food, max: Math.max(food * 2, 50), color: '#F59E0B' },
-    { label: 'Water (Litres)', value: water, max: Math.max(water * 2, 100), color: '#3B82F6' },
-    { label: 'Medical Kits', value: medical, max: Math.max(medical * 2, 10), color: '#10B981' },
-    { label: 'Rescue Teams', value: rescue, max: Math.max(rescue * 2, 5), color: '#EF4444' },
-    { label: 'Shelter Units', value: shelter, max: Math.max(shelter * 2, 5), color: '#8B5CF6' },
-  ];
-
-  const container = document.getElementById('distribution-bars');
-  if (!container) return;
-  container.innerHTML = items.map(item => `
-    <div class="distribution-bar">
-      <div class="distribution-label">
-        <span>${item.label}</span>
-        <span>${item.value.toLocaleString()} needed</span>
-      </div>
-      <div class="distribution-track">
-        <div class="distribution-fill" data-width="${Math.min(Math.round(item.value / item.max * 100), 100)}" style="background:${item.color};width:0%"></div>
-      </div>
-    </div>
-  `).join('');
-
-  setTimeout(() => {
-    container.querySelectorAll('.distribution-fill').forEach(el => {
-      el.style.width = el.dataset.width + '%';
-    });
-  }, 300);
-}
-
 /* ── Load & Render Requests Table ── */
 async function loadRequests() {
   const data = await Api.get('/admin/requests');
@@ -277,7 +233,6 @@ async function loadRequests() {
 
   allRequests = requests;
   renderRequestsTable(allRequests);
-  renderDistributionBars(allRequests.filter(r => ['Pending', 'Accepted'].includes(r.status)));
 }
 
 function renderRequestsTable(requests) {
@@ -509,5 +464,119 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!Session.requireRole('admin')) return;
   populateAdminInfo();
   await Promise.all([loadDashboard(), loadAnalytics(), loadRequests(), loadDisasters(), loadContactMessages(), loadVerifications()]);
+  loadAlerts();
   initFilters();
 });
+
+/* ── Weather Alerts ── */
+async function loadAlerts() {
+  const token = getToken();
+  try {
+    const res = await fetch(`${API_BASE}/alerts`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    renderAlerts(data.alerts || []);
+  } catch(e) {
+    document.getElementById('alerts-list').innerHTML = '<p style="color:var(--danger)">Failed to load alerts</p>';
+  }
+}
+
+function renderAlerts(alerts) {
+  const container = document.getElementById('alerts-list');
+  if (!alerts.length) {
+    container.innerHTML = '<p style="color:var(--text-muted)">No active alerts</p>';
+    return;
+  }
+  const severityColor = { Watch: '#f59e0b', Warning: '#ef4444', Emergency: '#7c3aed' };
+  const icons = { Cyclone: '🌀', Flood: '🌊', Storm: '⛈', Heatwave: '🔥', Earthquake: '🌍', Other: '⚠' };
+  container.innerHTML = alerts.map(a => `
+    <div style="border:1px solid var(--border-glass);border-radius:var(--radius);padding:16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <span style="font-size:1.4rem">${icons[a.alert_type] || '⚠'}</span>
+        <strong style="margin-left:8px">${a.alert_type} ${a.alert_type === 'Other' ? '' : ''}</strong>
+        <span style="margin-left:10px;padding:2px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;background:${severityColor[a.severity]}22;color:${severityColor[a.severity]}">${a.severity}</span>
+        <div style="color:var(--text-muted);font-size:0.83rem;margin-top:4px">${a.description}</div>
+        <div style="color:var(--text-muted);font-size:0.78rem;margin-top:2px">Radius: ${a.affected_radius_km}km · ${new Date(a.issued_at).toLocaleString()}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-resq" style="padding:6px 14px;font-size:0.82rem" onclick="notifyAll(${a.alert_id})">📣 Notify All</button>
+        <button class="btn-resq-outline" style="padding:6px 14px;font-size:0.82rem" onclick="viewResponses(${a.alert_id})">View Responses</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function notifyAll(alertId) {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}/alerts/${alertId}/notify`, {
+    method: 'PUT',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  const data = await res.json();
+  alert(`Pings sent to ${data.pings_sent} responders in zone`);
+}
+
+async function viewResponses(alertId) {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}/alerts/${alertId}/responses`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  const data = await res.json();
+  const responses = data.responses || [];
+  const summary = responses.map(p => `${p.user_name}: ${p.status}`).join('\n') || 'No responses yet';
+  alert(`Responses:\n${summary}`);
+}
+
+async function fetchOWMAlert() {
+  const token = getToken();
+  const btn = event.target;
+  btn.textContent = 'Fetching...';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/alerts/fetch`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (data.success) {
+      await loadAlerts();
+      btn.textContent = '✓ Fetched';
+    } else {
+      btn.textContent = '✗ Failed';
+    }
+  } catch(e) {
+    btn.textContent = '✗ Error';
+  }
+  setTimeout(() => { btn.textContent = '🔄 Fetch from OWM'; btn.disabled = false; }, 2000);
+}
+
+function showCreateAlertModal() {
+  document.getElementById('create-alert-modal').style.display = 'flex';
+}
+
+function closeCreateAlertModal() {
+  document.getElementById('create-alert-modal').style.display = 'none';
+}
+
+async function submitManualAlert() {
+  const token = getToken();
+  const body = {
+    alert_type:         document.getElementById('modal-alert-type').value,
+    severity:           document.getElementById('modal-severity').value,
+    description:        document.getElementById('modal-description').value,
+    affected_lat:       parseFloat(document.getElementById('modal-lat').value) || 17.6868,
+    affected_lng:       parseFloat(document.getElementById('modal-lng').value) || 83.2185,
+    affected_radius_km: parseInt(document.getElementById('modal-radius').value) || 50,
+  };
+  const res = await fetch(`${API_BASE}/alerts`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (data.success) {
+    closeCreateAlertModal();
+    await loadAlerts();
+  }
+}

@@ -280,6 +280,19 @@
 
   <!-- ── REQUESTS TAB ── -->
   <div class="admin-section" id="requests-section">
+    <!-- Weather Alert Panel -->
+    <div class="section-card" id="alerts-panel" style="margin-bottom:16px;">
+      <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="font-size:1.1rem;font-weight:700;">⚠ Active Weather Alerts</h2>
+        <div style="display:flex;gap:10px">
+          <button class="btn-resq" onclick="fetchOWMAlert()">🔄 Fetch from OWM</button>
+          <button class="btn-resq-outline" onclick="showCreateAlertModal()">+ Manual Alert</button>
+        </div>
+      </div>
+      <div id="alerts-list">
+        <p style="color:var(--text-muted)">Loading alerts...</p>
+      </div>
+    </div>
     <div class="resq-card">
       <div class="flex items-center justify-between mb-16" style="flex-wrap:wrap;gap:12px">
         <div>
@@ -439,5 +452,33 @@
     if (notifOpen && wrapper && !wrapper.contains(e.target)) closeNotifDropdown();
   });
 </script>
+<!-- Create Alert Modal -->
+<div id="create-alert-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--bg-card);border-radius:var(--radius);padding:32px;min-width:380px;max-width:500px">
+    <h3 style="margin-bottom:20px">Create Manual Alert</h3>
+    <select id="modal-alert-type" style="width:100%;margin-bottom:12px;padding:10px;border-radius:8px;border:1px solid var(--border-glass);background:var(--bg-input);color:var(--text-primary)">
+      <option value="Cyclone">Cyclone</option>
+      <option value="Flood">Flood</option>
+      <option value="Storm">Storm</option>
+      <option value="Heatwave">Heatwave</option>
+      <option value="Earthquake">Earthquake</option>
+      <option value="Other">Other</option>
+    </select>
+    <select id="modal-severity" style="width:100%;margin-bottom:12px;padding:10px;border-radius:8px;border:1px solid var(--border-glass);background:var(--bg-input);color:var(--text-primary)">
+      <option value="Watch">Watch</option>
+      <option value="Warning">Warning</option>
+      <option value="Emergency">Emergency</option>
+    </select>
+    <textarea id="modal-description" placeholder="Description" rows="3" style="width:100%;margin-bottom:12px;padding:10px;border-radius:8px;border:1px solid var(--border-glass);background:var(--bg-input);color:var(--text-primary);resize:none"></textarea>
+    <input id="modal-lat" type="number" placeholder="Latitude (default: 17.6868)" style="width:100%;margin-bottom:12px;padding:10px;border-radius:8px;border:1px solid var(--border-glass);background:var(--bg-input);color:var(--text-primary)">
+    <input id="modal-lng" type="number" placeholder="Longitude (default: 83.2185)" style="width:100%;margin-bottom:12px;padding:10px;border-radius:8px;border:1px solid var(--border-glass);background:var(--bg-input);color:var(--text-primary)">
+    <input id="modal-radius" type="number" placeholder="Radius km (default: 50)" style="width:100%;margin-bottom:20px;padding:10px;border-radius:8px;border:1px solid var(--border-glass);background:var(--bg-input);color:var(--text-primary)">
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn-resq-outline" onclick="closeCreateAlertModal()">Cancel</button>
+      <button class="btn-resq" onclick="submitManualAlert()">Create Alert</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

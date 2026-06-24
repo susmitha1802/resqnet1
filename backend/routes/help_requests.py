@@ -1,6 +1,6 @@
 """
 ResQNet — Help Requests Routes Blueprint
-POST /help-request          — submit SOS (victim only)
+POST /help-request          — submit SOS (reporter only)
 GET  /help-requests         — list requests (role-filtered)
 GET  /help-request/<id>     — get single request
 PUT  /help-request/status   — update status (volunteer/admin/ngo)
@@ -15,7 +15,6 @@ from models import User, HelpRequest, Volunteer, ReliefTask
 from ai.priority  import predict_priority
 from ai.duplicate import detect_duplicate
 from ai.severity  import classify_severity
-from ai.forecast  import forecast_resources
 from routes.middleware import require_role, require_any_role
 
 help_bp = Blueprint('help_requests', __name__)
@@ -44,7 +43,7 @@ def _save_file(file_obj, subfolder: str) -> str | None:
 
 # ── POST /help-request ─────────────────────────────────────────────────────────
 @help_bp.route('/help-request', methods=['POST'])
-@require_role('victim')   # Only victims can submit help requests
+@require_role('reporter')   # Only reporters can submit help requests
 def create_help_request():
     uid  = int(get_jwt_identity())
     data = request.form
@@ -89,9 +88,6 @@ def create_help_request():
     # ── AI: Damage Severity (if image provided) ───────────────────────────────
     severity = classify_severity(image_path=img_path) if img_path else None
 
-    # ── AI: Resource Forecast ─────────────────────────────────────────────────
-    resource_forecast = forecast_resources(request_type, people, priority)
-
     # ── Persist ───────────────────────────────────────────────────────────────
     req = HelpRequest(
         user_id          = uid,
@@ -117,7 +113,6 @@ def create_help_request():
                 'priority':     priority,
                 'is_duplicate': is_dup,
                 'severity':     severity,
-                'forecast':     resource_forecast,
             }
         },
         'Help request submitted successfully',
@@ -127,7 +122,7 @@ def create_help_request():
 
 # ── GET /help-requests ─────────────────────────────────────────────────────────
 @help_bp.route('/help-requests', methods=['GET'])
-@require_any_role(['victim', 'volunteer', 'ngo', 'admin'])
+@require_any_role(['reporter', 'volunteer', 'ngo', 'admin'])
 def get_help_requests():
     uid  = int(get_jwt_identity())
     user = db.get_or_404(User, uid)
@@ -152,7 +147,7 @@ def get_help_requests():
         )
 
     else:
-        # Victims see only their own requests
+        # Reporters see only their own requests
         reqs = (
             HelpRequest.query
             .filter_by(user_id=uid)
@@ -165,16 +160,16 @@ def get_help_requests():
 
 # ── GET /help-request/<id> ─────────────────────────────────────────────────────
 @help_bp.route('/help-request/<int:req_id>', methods=['GET'])
-@require_any_role(['victim', 'volunteer', 'ngo', 'admin'])
+@require_any_role(['reporter', 'volunteer', 'ngo', 'admin'])
 def get_help_request(req_id):
     uid  = int(get_jwt_identity())
     user = db.get_or_404(User, uid)
     req  = db.get_or_404(HelpRequest, req_id)
 
-    # Victims may only view their own requests — volunteers/ngo/admin need
+    # Reporters may only view their own requests — volunteers/ngo/admin need
     # broad read access to evaluate requests (e.g. before accepting a task),
-    # so only the victim role is ownership-scoped here.
-    if user.role == 'victim' and req.user_id != uid:
+    # so only the reporter role is ownership-scoped here.
+    if user.role == 'reporter' and req.user_id != uid:
         return _error('You do not have permission to view this request', 403)
 
     return _success({'request': req.to_dict()})
@@ -182,7 +177,7 @@ def get_help_request(req_id):
 
 # ── PUT /help-request/status ───────────────────────────────────────────────────
 @help_bp.route('/help-request/status', methods=['PUT'])
-@require_any_role(['volunteer', 'ngo', 'admin'])  # Victims cannot change status
+@require_any_role(['volunteer', 'ngo', 'admin'])  # Reporters cannot change status
 def update_request_status():
     uid  = int(get_jwt_identity())
     user = db.get_or_404(User, uid)

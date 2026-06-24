@@ -4,7 +4,7 @@
  * volunteer skills chips, NGO extras, admin secret code.
  */
 
-let selectedRole = 'victim'; // default
+let selectedRole = 'reporter'; // default
 let activeTab    = 'login';
 
 /* ── Role Selection ─────────────────────────────────────────────────────────── */
@@ -32,7 +32,7 @@ function updateHeading() {
   const heading = document.getElementById('form-heading');
   if (!heading) return;
   const roleLabels = {
-    victim:    'User',
+    reporter:    'Reporter',
     volunteer: 'Volunteer',
     ngo:       'NGO / Organization',
     admin:     'Administrator',
@@ -227,14 +227,14 @@ async function handleRegister(e) {
 /* ── Init ──────────────────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
   // Default role
-  selectRole('victim');
+  selectRole('reporter');
   switchTab('login');
   initSkillChips();
   initPasswordStrength();
   initPasswordToggle();
 
   // Role card clicks
-  ['victim', 'volunteer', 'ngo', 'admin'].forEach(role => {
+  ['reporter', 'volunteer', 'ngo', 'admin'].forEach(role => {
     document.getElementById(`role-${role}`)?.addEventListener('click', () => selectRole(role));
   });
 
