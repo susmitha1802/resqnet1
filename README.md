@@ -115,39 +115,6 @@ ResQNet addresses these challenges through a centralized coordination platform.
 
 ---
 
-## Technology Stack
-
-### Frontend
-
-* HTML5
-* CSS3
-* JavaScript
-* Chart.js
-* Leaflet.js
-
-### Backend
-
-* Python
-* Flask
-* SQLAlchemy
-* JWT Authentication
-
-### Database
-
-* Neon PostgreSQL
-
-### AI Module
-
-* TensorFlow
-* Keras
-* CNN Disaster Classification Model
-
-### Mapping
-
-* OpenStreetMap
-* Leaflet.js
-
----
 
 ## User Roles
 
