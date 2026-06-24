@@ -10,6 +10,7 @@ from flask_jwt_extended import jwt_required
 
 from extensions import db
 from models import ContactMessage
+from routes.middleware import require_role
 
 contact_bp = Blueprint('contact', __name__)
 
@@ -45,16 +46,14 @@ def submit_contact():
 
 # ── GET /admin/contact-messages ────────────────────────────────────────────────
 @contact_bp.route('/admin/contact-messages', methods=['GET'])
-@jwt_required()
+@require_role('admin')
 def get_contact_messages():
-    # In a full implementation, we'd verify the JWT user is an admin here.
-    # For now, we trust the route prefix.
     messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).all()
     return _success({'messages': [m.to_dict() for m in messages]})
 
 # ── PUT /admin/contact-messages/<id>/read ──────────────────────────────────────
 @contact_bp.route('/admin/contact-messages/<int:msg_id>/read', methods=['PUT'])
-@jwt_required()
+@require_role('admin')
 def mark_contact_message_read(msg_id):
     msg = db.get_or_404(ContactMessage, msg_id)
     msg.status = 'Read'
@@ -63,7 +62,7 @@ def mark_contact_message_read(msg_id):
 
 # ── DELETE /admin/contact-messages/<id> ────────────────────────────────────────
 @contact_bp.route('/admin/contact-messages/<int:msg_id>', methods=['DELETE'])
-@jwt_required()
+@require_role('admin')
 def delete_contact_message(msg_id):
     msg = db.get_or_404(ContactMessage, msg_id)
     db.session.delete(msg)

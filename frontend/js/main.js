@@ -7,15 +7,15 @@
 /* ── Session / Auth Helpers ─────────────────────────────────────────────────── */
 const Session = {
   KEYS: {
-    user:  'resqnet_user',
+    user: 'resqnet_user',
     token: 'resqnet_token',
-    role:  'resqnet_role',
+    role: 'resqnet_role',
   },
 
   /** Save user object, role and token to localStorage */
   set(user, token) {
-    localStorage.setItem(this.KEYS.user,  JSON.stringify(user));
-    localStorage.setItem(this.KEYS.role,  user.role || '');
+    localStorage.setItem(this.KEYS.user, JSON.stringify(user));
+    localStorage.setItem(this.KEYS.role, user.role || '');
     if (token) localStorage.setItem(this.KEYS.token, token);
   },
 
@@ -41,9 +41,9 @@ const Session = {
     localStorage.removeItem(this.KEYS.role);
   },
 
-  isLoggedIn()  { return !!this.get() && !!this.getToken(); },
-  role()        { return this.get()?.role || localStorage.getItem(this.KEYS.role) || null; },
-  getToken()    { return localStorage.getItem(this.KEYS.token); },
+  isLoggedIn() { return !!this.get() && !!this.getToken(); },
+  role() { return this.get()?.role || localStorage.getItem(this.KEYS.role) || null; },
+  getToken() { return localStorage.getItem(this.KEYS.token); },
 
   /**
    * Decode JWT expiry and check if token is still valid.
@@ -80,10 +80,10 @@ const Session = {
     if (!this.isLoggedIn()) return;
     const role = this.role();
     const map = {
-      admin:     'admin-dashboard.html',
+      admin: 'admin-dashboard.html',
       volunteer: 'volunteer-dashboard.html',
-      ngo:       'ngo-dashboard.html',
-      victim:    'user-dashboard.html',
+      ngo: 'ngo-dashboard.html',
+      victim: 'user-dashboard.html',
     };
     location.href = map[role] || 'user-dashboard.html';
   },
@@ -171,23 +171,23 @@ function initNavbar() {
 }
 
 function updateNavbarAuth() {
-  const user    = Session.get();
-  const loginBtn    = document.getElementById('nav-login-btn');
+  const user = Session.get();
+  const loginBtn = document.getElementById('nav-login-btn');
   const registerBtn = document.getElementById('nav-register-btn');
-  const dashBtn     = document.getElementById('nav-dashboard-btn');
-  const logoutBtn   = document.getElementById('nav-logout-btn');
+  const dashBtn = document.getElementById('nav-dashboard-btn');
+  const logoutBtn = document.getElementById('nav-logout-btn');
 
   if (user) {
-    if (loginBtn)    loginBtn.style.display    = 'none';
+    if (loginBtn) loginBtn.style.display = 'none';
     if (registerBtn) registerBtn.style.display = 'none';
 
     if (dashBtn) {
       dashBtn.style.display = 'inline-flex';
       const roleMap = {
-        admin:     'admin-dashboard.html',
+        admin: 'admin-dashboard.html',
         volunteer: 'volunteer-dashboard.html',
-        ngo:       'ngo-dashboard.html',
-        victim:    'user-dashboard.html',
+        ngo: 'ngo-dashboard.html',
+        victim: 'user-dashboard.html',
       };
       dashBtn.href = roleMap[user.role] || 'user-dashboard.html';
       dashBtn.textContent = `📊 My Dashboard`;
@@ -200,7 +200,7 @@ function updateNavbarAuth() {
       });
     }
   } else {
-    if (dashBtn)   dashBtn.style.display   = 'none';
+    if (dashBtn) dashBtn.style.display = 'none';
     if (logoutBtn) logoutBtn.style.display = 'none';
   }
 }
@@ -224,15 +224,15 @@ function initScrollAnimations() {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        entry.target.style.opacity    = '1';
-        entry.target.style.transform  = 'translateY(0)';
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
         observer.unobserve(entry.target);
       }
     });
   }, { threshold: 0.1 });
 
   els.forEach(el => {
-    el.style.opacity   = '0';
+    el.style.opacity = '0';
     el.style.transform = 'translateY(30px)';
     el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
     el.style.transitionDelay = `${el.dataset.delay || 0}ms`;
@@ -269,7 +269,7 @@ function initCounters() {
 
 /* ── Mobile sidebar toggle for dashboards ───────────────────────────────────── */
 function initSidebarToggle() {
-  const btn     = document.getElementById('sidebar-toggle-btn');
+  const btn = document.getElementById('sidebar-toggle-btn');
   const sidebar = document.querySelector('.resq-sidebar');
   const overlay = document.getElementById('sidebar-overlay');
   if (!btn || !sidebar) return;
@@ -303,7 +303,7 @@ function timeAgo(iso) {
   const diff = Date.now() - normalizeDate(iso).getTime();
   if (diff < 0) return 'Just now'; // Handle slight client-server sync drift
   const m = Math.floor(diff / 60000);
-  if (m < 1)  return 'Just now';
+  if (m < 1) return 'Just now';
   if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
@@ -337,96 +337,38 @@ document.addEventListener('DOMContentLoaded', () => {
   initCounters();
   initSidebarToggle();
   checkUrlMessage();
+  hideNotificationBell();
 });
 
 /* Expose globals */
-window.Session        = Session;
-window.Toast          = Toast;
-window.handleLogout   = handleLogout;
-window.formatDate     = formatDate;
+window.Session = Session;
+window.Toast = Toast;
+window.handleLogout = handleLogout;
+window.formatDate = formatDate;
 window.formatDateTime = formatDateTime;
-window.timeAgo        = timeAgo;
-window.priorityBadge  = priorityBadge;
-window.statusBadge    = statusBadge;
+window.timeAgo = timeAgo;
+window.priorityBadge = priorityBadge;
+window.statusBadge = statusBadge;
 
-/* ── Notification Bell Logic ── */
-let notifOpen = false;
-
-function toggleNotifDropdown() {
-  notifOpen = !notifOpen;
-  const dropdown = document.getElementById('notif-dropdown');
-  if (dropdown) dropdown.classList.toggle('open', notifOpen);
-  if (notifOpen) {
-    loadDummyNotifications();
-    setTimeout(() => {
-      const badge = document.getElementById('notif-badge');
-      if (badge) badge.classList.add('hidden');
-    }, 800);
-  }
-}
-
-function closeNotifDropdown() {
-  notifOpen = false;
-  const dropdown = document.getElementById('notif-dropdown');
-  if (dropdown) dropdown.classList.remove('open');
-}
-
-function clearNotifications() {
-  const list = document.getElementById('notif-list');
-  if (list) list.innerHTML = '<div class="notif-empty">✅ All caught up! No new alerts.</div>';
-  const badge = document.getElementById('notif-badge');
-  if (badge) { badge.textContent = '0'; badge.classList.add('hidden'); }
-}
-
-function loadDummyNotifications() {
-  const list = document.getElementById('notif-list');
-  if (!list || list.dataset.loaded) return;
-
-  const role = Session.role() || 'victim';
-  let items = [];
-
-  // Generate role-specific dummy notifications
-  if (role === 'victim') {
-    items = [
-      { dot: 'success', title: 'Request Accepted', sub: 'A volunteer has accepted your request. Help is on the way.' },
-      { dot: 'medium', title: 'Status Update', sub: 'Your request for Medicine has been flagged as High Priority.' }
-    ];
-  } else if (role === 'volunteer') {
-    items = [
-      { dot: 'high', title: '🚨 Emergency Near You', sub: 'New Rescue request just 2.4 km away.' },
-      { dot: 'success', title: 'Task Completed', sub: 'Your previous delivery was verified.' },
-      { dot: 'medium', title: 'New Help Request', sub: 'A new request for Food is pending assignment.' }
-    ];
-  } else if (role === 'ngo') {
-    items = [
-      { dot: 'high', title: 'Critical Shortage', sub: 'Your Medicine stock is running low (< 10 units).' },
-      { dot: 'success', title: 'Volunteer Assigned', sub: 'A volunteer was assigned to Request #102.' }
-    ];
-  } else {
-    items = [
-      { dot: 'high', title: '🚨 System Alert', sub: 'High volume of traffic in Hyderabad.' },
-      { dot: 'medium', title: 'Duplicate Detected', sub: 'AI flagged 2 possible duplicate requests.' }
-    ];
-  }
-
-  list.innerHTML = items.map(it => `
-    <div class="notif-item" onclick="closeNotifDropdown()">
-      <div class="notif-dot ${it.dot}"></div>
-      <div>
-        <div class="notif-item-title">${it.title}</div>
-        <div class="notif-item-sub">${it.sub}</div>
-      </div>
-    </div>
-  `).join('');
-  
-  list.dataset.loaded = 'true';
-}
-
-document.addEventListener('click', (e) => {
+/* ── Notification Bell ──────────────────────────────────────────────────────
+ * The notification bell previously showed static, hardcoded "dummy" content
+ * that wasn't connected to any real account activity (e.g. "A volunteer was
+ * assigned to Request #102" regardless of what had actually happened).
+ * Showing fabricated activity is worse than showing nothing, so the feature
+ * is hidden until it can be wired to real backend data. The markup is left
+ * in place in each dashboard page; this just keeps it out of the UI.
+ */
+function hideNotificationBell() {
   const wrapper = document.getElementById('notif-wrapper');
-  if (notifOpen && wrapper && !wrapper.contains(e.target)) closeNotifDropdown();
-});
+  if (wrapper) wrapper.style.display = 'none';
+}
+
+// No-op stubs kept so any leftover inline onclick="..." handlers in HTML
+// (e.g. a bell icon's onclick) don't throw if triggered before removal.
+function toggleNotifDropdown() { }
+function closeNotifDropdown() { }
+function clearNotifications() { }
 
 window.toggleNotifDropdown = toggleNotifDropdown;
-window.closeNotifDropdown  = closeNotifDropdown;
-window.clearNotifications  = clearNotifications;
+window.closeNotifDropdown = closeNotifDropdown;
+window.clearNotifications = clearNotifications;

@@ -301,6 +301,63 @@ class ReliefTask(db.Model):
             'completed_at':         self.completed_at.isoformat() + 'Z' if self.completed_at else None,
         }
 
+# ── ReliefResource (NGO Inventory) ──────────────────────────────────────────────
+# Persists NGO relief resources and their allocation to help requests.
+# Replaces the previous in-memory dict store in routes/ngo.py so that
+# inventory and allocations survive server restarts.
+
+class ReliefResource(db.Model):
+    __tablename__ = 'relief_resources'
+
+    resource_id:   Mapped[int]                = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name:          Mapped[str]                = mapped_column(String(150), nullable=False)
+    category:      Mapped[str]                = mapped_column(String(50),  nullable=False, default='General')
+    quantity:      Mapped[int]                = mapped_column(Integer, nullable=False)
+    unit:          Mapped[str]                = mapped_column(String(30),  nullable=False, default='units')
+    location:      Mapped[Optional[str]]      = mapped_column(String(200))
+    added_by:      Mapped[int]                = mapped_column(Integer, ForeignKey('users.user_id'), nullable=False)
+    allocated_to:  Mapped[Optional[int]]      = mapped_column(Integer, ForeignKey('help_requests.request_id'))
+    allocated_at:  Mapped[Optional[datetime]] = mapped_column(DateTime)
+    added_at:      Mapped[datetime]           = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    added_by_user: Mapped[User]                       = relationship('User', foreign_keys=[added_by])
+    allocated_request: Mapped[Optional[HelpRequest]]  = relationship('HelpRequest', foreign_keys=[allocated_to])
+
+    def __init__(
+        self,
+        name:         str,
+        quantity:     int,
+        added_by:     int,
+        category:     str = 'General',
+        unit:         str = 'units',
+        location:     Optional[str] = None,
+        allocated_to: Optional[int] = None,
+        allocated_at: Optional[datetime] = None,
+    ) -> None:
+        self.name         = name
+        self.category     = category
+        self.quantity     = quantity
+        self.unit         = unit
+        self.location     = location
+        self.added_by     = added_by
+        self.allocated_to = allocated_to
+        self.allocated_at = allocated_at
+
+    def to_dict(self) -> dict:
+        return {
+            'resource_id':  self.resource_id,
+            'name':         self.name,
+            'category':     self.category,
+            'quantity':     self.quantity,
+            'unit':         self.unit,
+            'location':     self.location,
+            'allocated_to': self.allocated_to,
+            'added_by':     self.added_by,
+            'added_at':     self.added_at.isoformat() + 'Z' if self.added_at else None,
+            'allocated_at': self.allocated_at.isoformat() + 'Z' if self.allocated_at else None,
+        }
+
+
 # ── Contact Message ────────────────────────────────────────────────────────────
 
 class ContactMessage(db.Model):

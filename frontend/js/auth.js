@@ -136,9 +136,12 @@ async function handleLogin(e) {
     return;
   }
 
-  // API error response
-  const errorMsg = data?.message || 'Invalid email or password';
-  Toast.show(errorMsg, 'danger');
+  if (data === null) {
+    Toast.show('Network error: Is the backend server running?', 'danger');
+  } else {
+    const errorMsg = data.message || 'Invalid email or password';
+    Toast.show(errorMsg, 'danger');
+  }
   btn.disabled = false;
   btn.innerHTML = '🔑 Sign In';
 }
@@ -210,8 +213,12 @@ async function handleRegister(e) {
     return;
   }
 
-  const errorMsg = data?.message || 'Registration failed. Please try again.';
-  Toast.show(errorMsg, 'danger');
+  if (data === null) {
+    Toast.show('Network error: Is the backend server running?', 'danger');
+  } else {
+    const errorMsg = data.message || 'Registration failed. Please try again.';
+    Toast.show(errorMsg, 'danger');
+  }
   btn.disabled = false;
   btn.innerHTML = '📝 Create Account';
 }

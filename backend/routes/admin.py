@@ -197,6 +197,7 @@ def verify_task(task_id):
     if action == 'Approve':
         task.verification_status = 'Approved'
         task.verified_by_admin_id = uid
+        task.verified_at = datetime.now(timezone.utc)
         task.status = 'Completed'
         task.completed_at = datetime.now(timezone.utc)
         task.request.status = 'Completed'
@@ -205,6 +206,7 @@ def verify_task(task_id):
     elif action == 'Reject':
         task.verification_status = 'Rejected'
         task.verified_by_admin_id = uid
+        task.verified_at = datetime.now(timezone.utc)
         task.status = 'Assigned' # Revert to assigned so they can try again
     else:
         return _error('Invalid action')

@@ -4,10 +4,10 @@
  */
 
 let chartRequestsType = null;
-let chartStatus       = null;
-let chartTrend        = null;
-let chartDisasters    = null;
-let allRequests       = [];
+let chartStatus = null;
+let chartTrend = null;
+let chartDisasters = null;
+let allRequests = [];
 
 /* ── Chart defaults ── */
 const chartDefaults = {
@@ -44,45 +44,45 @@ function animateStatCounter(id, target) {
 async function loadDashboard() {
   let data = await Api.get('/admin/dashboard');
 
-  const s = data.stats || {};
-  animateStatCounter('stat-total',      s.total_requests    || 0);
-  animateStatCounter('stat-high',       s.high_priority     || 0);
+  const s = data?.stats || {};
+  animateStatCounter('stat-total', s.total_requests || 0);
+  animateStatCounter('stat-high', s.high_priority || 0);
   animateStatCounter('stat-volunteers', s.active_volunteers || 0);
-  animateStatCounter('stat-completed',  s.completed         || 0);
-  animateStatCounter('stat-pending',    s.pending           || 0);
-  animateStatCounter('stat-reports',    s.disaster_reports  || 0);
+  animateStatCounter('stat-completed', s.completed || 0);
+  animateStatCounter('stat-pending', s.pending || 0);
+  animateStatCounter('stat-reports', s.disaster_reports || 0);
 
   // Real stat-change labels
-  const total    = s.total_requests    || 0;
-  const high     = s.high_priority     || 0;
-  const vols     = s.active_volunteers || 0;
-  const completed = s.completed        || 0;
-  const pending  = s.pending           || 0;
-  const reports  = s.disaster_reports  || 0;
-  const dup      = s.duplicate         || 0;
-  const pct      = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const total = s.total_requests || 0;
+  const high = s.high_priority || 0;
+  const vols = s.active_volunteers || 0;
+  const completed = s.completed || 0;
+  const pending = s.pending || 0;
+  const reports = s.disaster_reports || 0;
+  const dup = s.duplicate || 0;
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
-  set('stat-change-total',     total     > 0 ? `${total} total submitted`          : 'No requests yet');
-  set('stat-change-high',      high      > 0 ? `⚠️ ${high} need immediate action`  : '✅ No critical cases');
-  set('stat-change-volunteers',vols      > 0 ? `${vols} available right now`       : 'No volunteers online');
-  set('stat-change-completed', completed > 0 ? `${pct}% resolution rate`           : 'None completed yet');
-  set('stat-change-pending',   pending   > 0 ? `${pending} awaiting assignment`    : '✅ All assigned');
-  set('stat-change-reports',   reports   > 0 ? `${reports} disaster reports filed` : 'No reports yet');
+  set('stat-change-total', total > 0 ? `${total} total submitted` : 'No requests yet');
+  set('stat-change-high', high > 0 ? `⚠️ ${high} need immediate action` : '✅ No critical cases');
+  set('stat-change-volunteers', vols > 0 ? `${vols} available right now` : 'No volunteers online');
+  set('stat-change-completed', completed > 0 ? `${pct}% resolution rate` : 'None completed yet');
+  set('stat-change-pending', pending > 0 ? `${pending} awaiting assignment` : '✅ All assigned');
+  set('stat-change-reports', reports > 0 ? `${reports} disaster reports filed` : 'No reports yet');
 
   // Volunteer summary panel
   const volSummary = document.getElementById('volunteer-summary');
   if (volSummary) {
-    const total_v = s.total_volunteers  || 0;
+    const total_v = s.total_volunteers || 0;
     const avail_v = s.active_volunteers || 0;
-    const tasks_v = s.relief_tasks      || 0;
-    const busy_v  = Math.max(0, total_v - avail_v);
+    const tasks_v = s.relief_tasks || 0;
+    const busy_v = Math.max(0, total_v - avail_v);
 
     volSummary.innerHTML = [
-      { label: 'Total Registered', val: total_v,  color: '#3B82F6', bg: 'rgba(59,130,246,0.08)',  border: 'rgba(59,130,246,0.15)' },
-      { label: 'Available Now',    val: avail_v,  color: '#10B981', bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.15)' },
-      { label: 'On Active Task',   val: busy_v,   color: '#F59E0B', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.15)' },
-      { label: 'Tasks Completed',  val: tasks_v,  color: '#8B5CF6', bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.15)' },
+      { label: 'Total Registered', val: total_v, color: '#3B82F6', bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.15)' },
+      { label: 'Available Now', val: avail_v, color: '#10B981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.15)' },
+      { label: 'On Active Task', val: busy_v, color: '#F59E0B', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.15)' },
+      { label: 'Tasks Completed', val: tasks_v, color: '#8B5CF6', bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.15)' },
     ].map(item => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;
                   background:${item.bg};border-radius:var(--radius);border:1px solid ${item.border}">
@@ -97,11 +97,11 @@ async function loadDashboard() {
 async function loadAnalytics() {
   let data = await Api.get('/admin/analytics');
 
-  const byType     = data.by_type     || {};
-  const byStatus   = data.by_status   || {};
-  const byPriority = data.by_priority || {};
-  const byDisaster = data.by_disaster || {};
-  const byDay      = data.by_day      || [];
+  const byType = data?.by_type || {};
+  const byStatus = data?.by_status || {};
+  const byPriority = data?.by_priority || {};
+  const byDisaster = data?.by_disaster || {};
+  const byDay = data?.by_day || [];
 
   // Predefined lists to ensure consistent categories and colors
   const DISASTER_TYPES = ['Flood', 'Cyclone', 'Earthquake', 'Landslide', 'Fire'];
@@ -119,8 +119,8 @@ async function loadAnalytics() {
         labels,
         datasets: [{
           data: values,
-          backgroundColor: ['rgba(239,68,68,0.7)','rgba(245,158,11,0.7)','rgba(59,130,246,0.7)','rgba(16,185,129,0.7)','rgba(139,92,246,0.7)'],
-          borderColor:      ['#EF4444','#F59E0B','#3B82F6','#10B981','#8B5CF6'],
+          backgroundColor: ['rgba(239,68,68,0.7)', 'rgba(245,158,11,0.7)', 'rgba(59,130,246,0.7)', 'rgba(16,185,129,0.7)', 'rgba(139,92,246,0.7)'],
+          borderColor: ['#EF4444', '#F59E0B', '#3B82F6', '#10B981', '#8B5CF6'],
           borderWidth: 2, borderRadius: 8, borderSkipped: false,
         }]
       },
@@ -147,7 +147,7 @@ async function loadAnalytics() {
         datasets: [{
           data: values,
           backgroundColor: ['rgba(239,68,68,0.7)', 'rgba(59,130,246,0.7)', 'rgba(245,158,11,0.7)', 'rgba(139,92,246,0.7)', 'rgba(16,185,129,0.7)'],
-          borderColor:      ['#EF4444',             '#3B82F6',             '#F59E0B',             '#8B5CF6',              '#10B981'],
+          borderColor: ['#EF4444', '#3B82F6', '#F59E0B', '#8B5CF6', '#10B981'],
           borderWidth: 2, hoverOffset: 8,
         }]
       },
@@ -165,7 +165,7 @@ async function loadAnalytics() {
   // 3. Line — Weekly Trend (last 7 days from by_day)
   const lineCtx = document.getElementById('chart-trend')?.getContext('2d');
   if (lineCtx) {
-    const labels   = byDay.map(d => d.day?.slice(5) || d.day); // MM-DD
+    const labels = byDay.map(d => d.day?.slice(5) || d.day); // MM-DD
     const requests = byDay.map(d => d.count);
     if (chartTrend) chartTrend.destroy();
     chartTrend = new Chart(lineCtx, {
@@ -209,8 +209,8 @@ async function loadAnalytics() {
         labels,
         datasets: [{
           data: values,
-          backgroundColor: ['rgba(59,130,246,0.7)','rgba(139,92,246,0.7)','rgba(16,185,129,0.7)','rgba(245,158,11,0.7)','rgba(239,68,68,0.7)'],
-          borderColor: ['#3B82F6','#8B5CF6','#10B981','#F59E0B','#EF4444'],
+          backgroundColor: ['rgba(59,130,246,0.7)', 'rgba(139,92,246,0.7)', 'rgba(16,185,129,0.7)', 'rgba(245,158,11,0.7)', 'rgba(239,68,68,0.7)'],
+          borderColor: ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444'],
           borderWidth: 2
         }]
       },
@@ -233,20 +233,20 @@ function renderDistributionBars(requests) {
   requests.forEach(r => {
     // Estimate from priority
     const mult = r.priority_level === 'High' ? 1.5 : 1.0;
-    const p    = r.number_of_people || 1;
-    if (r.request_type === 'Food')     { food   += Math.round(p * 3 * mult); water += Math.round(p * 2); }
-    if (r.request_type === 'Water')    { water  += Math.round(p * 5 * mult); }
+    const p = r.number_of_people || 1;
+    if (r.request_type === 'Food') { food += Math.round(p * 3 * mult); water += Math.round(p * 2); }
+    if (r.request_type === 'Water') { water += Math.round(p * 5 * mult); }
     if (r.request_type === 'Medicine') { medical += Math.max(1, Math.round(p / 3)); }
-    if (r.request_type === 'Rescue')   { rescue  += Math.max(2, Math.round(p / 2)); medical += Math.max(1, Math.round(p / 5)); }
-    if (r.request_type === 'Shelter')  { shelter += Math.max(1, Math.round(p / 5)); }
+    if (r.request_type === 'Rescue') { rescue += Math.max(2, Math.round(p / 2)); medical += Math.max(1, Math.round(p / 5)); }
+    if (r.request_type === 'Shelter') { shelter += Math.max(1, Math.round(p / 5)); }
   });
 
   const items = [
-    { label: 'Food Packets',   value: food,    max: Math.max(food * 2, 50),    color: '#F59E0B' },
-    { label: 'Water (Litres)', value: water,   max: Math.max(water * 2, 100),  color: '#3B82F6' },
-    { label: 'Medical Kits',   value: medical, max: Math.max(medical * 2, 10), color: '#10B981' },
-    { label: 'Rescue Teams',   value: rescue,  max: Math.max(rescue * 2, 5),   color: '#EF4444' },
-    { label: 'Shelter Units',  value: shelter, max: Math.max(shelter * 2, 5),  color: '#8B5CF6' },
+    { label: 'Food Packets', value: food, max: Math.max(food * 2, 50), color: '#F59E0B' },
+    { label: 'Water (Litres)', value: water, max: Math.max(water * 2, 100), color: '#3B82F6' },
+    { label: 'Medical Kits', value: medical, max: Math.max(medical * 2, 10), color: '#10B981' },
+    { label: 'Rescue Teams', value: rescue, max: Math.max(rescue * 2, 5), color: '#EF4444' },
+    { label: 'Shelter Units', value: shelter, max: Math.max(shelter * 2, 5), color: '#8B5CF6' },
   ];
 
   const container = document.getElementById('distribution-bars');
@@ -274,10 +274,10 @@ function renderDistributionBars(requests) {
 async function loadRequests() {
   const data = await Api.get('/admin/requests');
   let requests = data?.requests || [];
-  
+
   allRequests = requests;
   renderRequestsTable(allRequests);
-  renderDistributionBars(allRequests.filter(r => ['Pending','Accepted'].includes(r.status)));
+  renderDistributionBars(allRequests.filter(r => ['Pending', 'Accepted'].includes(r.status)));
 }
 
 function renderRequestsTable(requests) {
@@ -307,7 +307,7 @@ function renderRequestsTable(requests) {
 async function loadDisasters() {
   try {
     const data = await Api.get('/reports');
-    const reports = data.reports || [];
+    const reports = data?.reports || [];
     const tbody = document.getElementById('disasters-tbody');
     if (!tbody) return;
 
@@ -349,8 +349,8 @@ async function loadDisasters() {
 async function loadContactMessages() {
   try {
     const data = await Api.get('/admin/contact-messages');
-    const messages = data.messages || [];
-    
+    const messages = data?.messages || [];
+
     // Update KPI
     const unreadCount = messages.filter(m => m.status === 'Unread').length;
     const statSupport = document.getElementById('stat-support-messages');
@@ -395,9 +395,11 @@ async function loadContactMessages() {
 async function markContactMessageRead(id) {
   try {
     const data = await Api.put('/admin/contact-messages/' + id + '/read');
-    if (data.success) {
+    if (data?.success) {
       Toast.show('Message marked as read', 'success');
       loadContactMessages();
+    } else {
+      Toast.show(data?.message || 'Failed to mark as read', 'danger');
     }
   } catch (err) {
     console.error(err);
@@ -409,9 +411,11 @@ async function deleteContactMessage(id) {
   if (!confirm('Are you sure you want to delete this message?')) return;
   try {
     const data = await Api.delete('/admin/contact-messages/' + id);
-    if (data.success) {
+    if (data?.success) {
       Toast.show('Message deleted', 'success');
       loadContactMessages();
+    } else {
+      Toast.show(data?.message || 'Failed to delete message', 'danger');
     }
   } catch (err) {
     console.error(err);
@@ -466,9 +470,9 @@ async function reviewTask(taskId, action) {
 
 /* ── Filters ── */
 function initFilters() {
-  const search   = document.getElementById('search-input');
+  const search = document.getElementById('search-input');
   const priority = document.getElementById('priority-filter');
-  const status   = document.getElementById('status-filter');
+  const status = document.getElementById('status-filter');
 
   const apply = () => {
     let filtered = [...allRequests];

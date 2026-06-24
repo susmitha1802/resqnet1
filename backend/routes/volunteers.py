@@ -14,7 +14,6 @@ from werkzeug.utils import secure_filename
 from extensions import db
 from models import HelpRequest, Volunteer, ReliefTask
 from routes.middleware import require_role
-from ai.task_verification import verify_task_evidence
 
 volunteers_bp = Blueprint('volunteers', __name__)
 
@@ -165,16 +164,15 @@ def upload_proof(task_id):
     if not img_path:
         return _error('Proof image is required')
 
-    # AI Verification
-    verification_result = verify_task_evidence(img_path, notes)
-
+    # Update timestamps and statuses
     task.proof_image_path    = img_path
     task.completion_notes    = notes
     task.status              = 'Proof Submitted'
     task.verification_status = 'Pending'
+    task.proof_submitted_at  = datetime.now(timezone.utc)
+    task.request.status      = 'Proof Submitted'
 
     db.session.commit()
     return _success({
-        'task': task.to_dict(),
-        'ai_verification': verification_result
+        'task': task.to_dict()
     }, 'Proof uploaded successfully. Pending Admin verification.')

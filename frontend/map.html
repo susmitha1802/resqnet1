@@ -6,149 +6,40 @@
   <title>ResQNet — Live Disaster Map</title>
   <meta name="description" content="Live interactive map showing disaster locations, help requests, and volunteer positions.">
 
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <!-- Marker Cluster CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
-
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/styles.css">
 
   <style>
-    body, html { margin: 0; padding: 0; height: 100dvh; overflow: hidden; }
-
+    html, body { margin: 0; padding: 0; height: 100dvh; overflow: hidden; background: #050b14; }
     #map { position: absolute; inset: 0; z-index: 1; }
-
-    /* Map overlay UI */
-    .map-topbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 500;
-      background: rgba(10,14,26,0.92);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border-glass);
-      padding: 10px 20px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    /* Search bar */
-    .map-search-wrap {
-      position: relative;
-      flex-shrink: 0;
-      width: 260px;
-    }
-    .map-search-input {
-      width: 100%;
-      padding: 7px 14px 7px 36px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--border-glass);
-      border-radius: 20px;
-      color: var(--text-primary);
-      font-size: 0.82rem;
-      outline: none;
-    }
-    .map-search-input:focus { border-color: var(--primary); }
-    .map-search-input::placeholder { color: var(--text-muted); }
-    .map-search-icon {
-      position: absolute;
-      left: 12px; top: 50%;
-      transform: translateY(-50%);
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      pointer-events: none;
-    }
-    .map-search-results {
-      display: none;
-      position: absolute;
-      top: calc(100% + 6px); left: 0; right: 0;
-      background: #1f2937;
-      border: 1px solid rgba(255,75,43,0.2);
-      border-radius: 10px;
-      z-index: 1000;
-      max-height: 220px;
-      overflow-y: auto;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-    }
-
-    .map-legend {
-      position: fixed;
-      bottom: 40px; right: 20px;
-      z-index: 500;
-      background: rgba(17,24,39,0.95);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--border-glass);
-      border-radius: var(--radius-lg);
-      padding: 18px 20px;
-      min-width: 210px;
-    }
 
     .map-stats {
       position: fixed;
-      top: 80px; left: 20px;
+      top: 78px; left: 16px;
       z-index: 500;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      display: flex; flex-direction: column; gap: 8px;
     }
-    .map-stat-pill {
-      background: rgba(17,24,39,0.95);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--border-glass);
-      border-radius: 30px;
-      padding: 8px 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.82rem;
-      color: var(--text-secondary);
-    }
-    .map-stat-pill strong { color: var(--text-primary); }
-
-    /* Click-to-pick hint */
-    .map-pick-hint {
+    .map-legend {
       position: fixed;
-      bottom: 40px; left: 50%; transform: translateX(-50%);
+      bottom: 36px; right: 16px;
       z-index: 500;
-      background: rgba(17,24,39,0.92);
-      border: 1px solid rgba(255,75,43,0.3);
-      border-radius: 24px;
-      padding: 10px 20px;
-      font-size: 0.82rem;
-      color: var(--text-secondary);
-      pointer-events: none;
-      display: none;
     }
 
-    .legend-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 12px; }
-    .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.82rem; color: var(--text-secondary); }
-    .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .map-filters {
+      display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-left: auto;
+    }
 
-    /* Filter chips */
-    .map-filter-chip {
-      padding: 6px 14px;
-      border-radius: 20px;
-      border: 1px solid var(--border-glass);
-      background: var(--bg-glass);
-      color: var(--text-secondary);
-      font-size: 0.8rem;
-      cursor: pointer;
+    /* Back to dashboard link */
+    .map-back-link {
+      color: var(--text-secondary); text-decoration: none; font-size: 0.78rem;
+      font-weight: 600; display: flex; align-items: center; gap: 5px;
+      padding: 5px 10px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle); background: var(--bg-glass);
       transition: var(--transition-sm);
-      white-space: nowrap;
     }
-    .map-filter-chip:hover { border-color: var(--primary); color: var(--primary); }
-    .map-filter-chip.active { background: rgba(255,75,43,0.15); border-color: var(--primary); color: var(--primary); font-weight: 600; }
-
-    @media (max-width: 640px) {
-      .map-stats { display: none; }
-      .map-legend { bottom: 10px; right: 10px; min-width: 150px; padding: 12px; }
-      .map-search-wrap { width: 100%; margin-top: 8px; }
-      .map-topbar { padding: 10px; }
-      .map-filters { width: 100%; overflow-x: auto; padding-bottom: 4px; white-space: nowrap; flex-wrap: nowrap; }
-    }
+    .map-back-link:hover { color: var(--accent-red); border-color: var(--accent-red); }
 
     @keyframes ripple { 0% { transform:scale(0); opacity:0.8; } 100% { transform:scale(4); opacity:0; } }
   </style>
@@ -160,68 +51,73 @@
 
 <!-- Top Bar -->
 <div class="map-topbar">
-  <div style="font-weight:700;font-size:1.1rem;letter-spacing:-0.02em;display:flex;align-items:center;gap:10px">
-    <div style="width:28px;height:28px;background:var(--grad-primary);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.9rem">R</div>
-    ResQNet Live
+  <!-- Logo -->
+  <div style="font-weight:700;font-size:1rem;letter-spacing:-0.02em;display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <div style="width:28px;height:28px;background:var(--grad-primary);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:0.85rem;box-shadow:var(--glow-red-sm)">🚨</div>
+    <span style="font-family:'Space Grotesk',sans-serif">ResQNet <span style="color:var(--accent-red)">Live</span></span>
   </div>
-  
+
+  <!-- Search -->
   <div class="map-search-wrap">
     <span class="map-search-icon">🔍</span>
     <input type="text" id="map-search-input" class="map-search-input" placeholder="Search places, addresses..." autocomplete="off">
     <div id="map-search-results" class="map-search-results"></div>
   </div>
 
-  <!-- Map Filters -->
-  <div class="map-filters" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-left:auto">
+  <!-- Filter Chips -->
+  <div class="map-filters" id="map-filters-bar">
     <button class="map-filter-chip active" onclick="applyMapFilter('All')">All</button>
-    <button class="map-filter-chip" onclick="applyMapFilter('High')">High</button>
-    <button class="map-filter-chip" onclick="applyMapFilter('Medium')">Medium</button>
-    <button class="map-filter-chip" onclick="applyMapFilter('Low')">Low</button>
-    <button class="map-filter-chip" onclick="applyMapFilter('Volunteers')">Volunteers</button>
-    <button class="map-filter-chip" onclick="applyMapFilter('Disasters')">Disasters</button>
+    <button class="map-filter-chip" onclick="applyMapFilter('High')">🔴 High</button>
+    <button class="map-filter-chip" onclick="applyMapFilter('Medium')">🟡 Medium</button>
+    <button class="map-filter-chip" onclick="applyMapFilter('Low')">🟢 Low</button>
+    <button class="map-filter-chip" onclick="applyMapFilter('Volunteers')">👥 Volunteers</button>
+    <button class="map-filter-chip" onclick="applyMapFilter('Disasters')">⚠️ Disasters</button>
   </div>
+
+  <!-- Back Link -->
+  <a href="javascript:history.back()" class="map-back-link">← Back</a>
 </div>
 
-<div id="map-empty-state" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1000; background:rgba(17,24,39,0.9); padding:20px 30px; border-radius:var(--radius-lg); border:1px solid var(--border-glass); color:var(--text-secondary); text-align:center; font-weight:600">
-  No active incidents currently reported.
-</div>
-
-<!-- Stats Pills -->
+<!-- Stats Pills (left) -->
 <div class="map-stats">
   <div class="map-stat-pill">
-    <span style="width:8px;height:8px;border-radius:50%;background:#EF4444;box-shadow:0 0 6px #EF4444;flex-shrink:0"></span>
+    <span style="width:8px;height:8px;border-radius:50%;background:var(--accent-red);box-shadow:0 0 6px var(--accent-red);flex-shrink:0;animation:pulseRed 1.5s infinite"></span>
     <span><strong id="high-count">0</strong> High Priority</span>
   </div>
   <div class="map-stat-pill">
-    <span style="width:8px;height:8px;border-radius:50%;background:#F59E0B;box-shadow:0 0 6px #F59E0B;flex-shrink:0"></span>
+    <span style="width:8px;height:8px;border-radius:50%;background:var(--accent-amber);box-shadow:0 0 6px var(--accent-amber);flex-shrink:0"></span>
     <span><strong id="medium-count">0</strong> Medium Priority</span>
   </div>
   <div class="map-stat-pill">
-    <span style="width:8px;height:8px;border-radius:50%;background:#10B981;box-shadow:0 0 6px #10B981;flex-shrink:0"></span>
+    <span style="width:8px;height:8px;border-radius:50%;background:var(--accent-green);box-shadow:0 0 6px var(--accent-green);flex-shrink:0"></span>
     <span><strong id="vol-count">0</strong> Volunteers Active</span>
   </div>
   <div class="map-stat-pill">
-    <span style="width:8px;height:8px;border-radius:50%;background:var(--primary);animation:pulse 1.5s infinite;flex-shrink:0"></span>
+    <span style="width:8px;height:8px;border-radius:50%;background:var(--accent-blue);box-shadow:0 0 6px var(--accent-blue);flex-shrink:0;animation:pulseRed 1.5s infinite"></span>
     <span><strong id="live-count">0</strong> Live Incidents</span>
   </div>
 </div>
 
-<!-- Legend -->
+<!-- Legend (right) -->
 <div class="map-legend">
   <div class="legend-title">Map Legend</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#EF4444;box-shadow:0 0 6px #EF4444"></div> High Priority Request</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#F59E0B;box-shadow:0 0 6px #F59E0B"></div> Medium Priority Request</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#10B981;box-shadow:0 0 6px #10B981"></div> Low Priority Request</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#3B82F6;box-shadow:0 0 6px #3B82F6"></div> Disaster Report Zone</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#8B5CF6;box-shadow:0 0 6px #8B5CF6"></div> Volunteer Location</div>
-  <div style="border-top:1px solid var(--border-glass);margin-top:12px;padding-top:12px;font-size:0.75rem;color:var(--text-muted)">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--accent-red);box-shadow:0 0 5px var(--accent-red)"></div> High Priority</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--accent-amber);box-shadow:0 0 5px var(--accent-amber)"></div> Medium Priority</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--accent-green);box-shadow:0 0 5px var(--accent-green)"></div> Low Priority</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#F97316;box-shadow:0 0 5px #F97316"></div> Disaster Report</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--accent-blue);box-shadow:0 0 5px var(--accent-blue)"></div> Volunteer</div>
+  <div style="border-top:1px solid var(--border-subtle);margin-top:10px;padding-top:10px;font-size:0.72rem;color:var(--text-muted)">
     Click any marker for details
   </div>
 </div>
 
+<!-- Empty State -->
+<div id="map-empty-state" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;background:rgba(13,22,39,0.96);padding:20px 28px;border-radius:var(--radius);border:1px solid var(--border-subtle);color:var(--text-secondary);text-align:center;font-weight:600;backdrop-filter:blur(12px)">
+  No active incidents currently reported.
+</div>
+
 <div id="toast-container"></div>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="js/api.js"></script>
@@ -259,8 +155,7 @@ window.applyMapFilter = function(filter) {
   currentMapFilter = filter;
   window._filterJustChanged = true;
   document.querySelectorAll('.map-filter-chip').forEach(btn => {
-    if (btn.innerText === filter) btn.classList.add('active');
-    else btn.classList.remove('active');
+    btn.classList.toggle('active', btn.innerText.includes(filter) || (filter === 'All' && btn.innerText === 'All'));
   });
   loadMapData();
 };
@@ -319,36 +214,28 @@ async function loadMapData() {
     if (params.get('request_id') == r.request_id) {
       window._foundTargetMarker = true;
       setTimeout(() => {
-        reqCluster.zoomToShowLayer(marker, () => {
-          marker.openPopup();
-        });
+        reqCluster.zoomToShowLayer(marker, () => { marker.openPopup(); });
       }, 500);
     }
   });
 
-  // Update all stat pills from API data
-  // High & Medium are counted from requests array above
   document.getElementById('high-count').textContent   = highCount;
   document.getElementById('medium-count').textContent = medCount;
 
-  // Volunteers Active = total registered volunteers (from API, not just GPS-mapped)
   const totalVols = data.total_volunteers ?? (data.volunteers || []).length;
   document.getElementById('vol-count').textContent = totalVols;
 
-  // Live Incidents = total active incidents (requests + recent reports)
   const liveCount = data.total_active ?? ((data.requests || []).length + (data.reports || []).length);
   const liveEl = document.getElementById('live-count');
   if (liveEl) liveEl.textContent = liveCount;
 
   // ── Volunteers ──
   const volLayer = L.layerGroup();
-  let volMapCount = 0;  // only those with GPS for the map markers
 
   (data.volunteers || []).forEach(v => {
     const lat = parseFloat(v.last_location_lat);
     const lng = parseFloat(v.last_location_lng);
     if (!lat || !lng || isNaN(lat) || isNaN(lng)) return;
-    volMapCount++;
 
     if (currentMapFilter !== 'All' && currentMapFilter !== 'Volunteers') return;
 
@@ -378,7 +265,7 @@ async function loadMapData() {
     if (currentMapFilter !== 'All' && currentMapFilter !== 'Disasters') return;
 
     totalVisibleMarkers++;
-    const color = '#F97316'; // strictly Orange for Disasters
+    const color = '#F97316';
 
     const popup = ResQMap.popupHtml(`
       <div style="font-weight:700;font-size:0.95rem;margin-bottom:6px;color:#F97316">
@@ -395,7 +282,7 @@ async function loadMapData() {
       .bindPopup(popup)
       .addTo(disLayer);
     renderedMarkers.push(marker);
-      
+
     const params = new URLSearchParams(location.search);
     if (params.get('report_id') == rep.report_id) {
       window._foundTargetMarker = true;
@@ -416,8 +303,7 @@ async function loadMapData() {
 
   const emptyState = document.getElementById('map-empty-state');
   if (emptyState) {
-    if (totalVisibleMarkers === 0) emptyState.style.display = 'block';
-    else emptyState.style.display = 'none';
+    emptyState.style.display = totalVisibleMarkers === 0 ? 'block' : 'none';
   }
 
   const params = new URLSearchParams(location.search);

@@ -57,12 +57,15 @@ def report_disaster():
 
     # Save image (first file if multiple)
     img_path = None
-    ai_prediction = {"predicted_disaster_type": "Unknown", "confidence": 0.0}
+    ai_prediction = {"predicted_disaster_type": "Unknown", "confidence": 0.0, "note": None}
     if 'images' in request.files:
         img_path = _save_file(request.files['images'], 'reports')
         if not img_path:
             return _error('Uploaded image format is not supported or file is invalid', 400)
-        ai_prediction = predict_disaster(img_path)
+        # Pass the user-reported type through so the classifier can tell us
+        # explicitly when it has no model support for that disaster type
+        # (e.g. "Landslide"), instead of silently returning "Unknown".
+        ai_prediction = predict_disaster(img_path, reported_disaster_type=disaster_type)
 
     severity = classify_severity(image_path=img_path, disaster_type=disaster_type)
 
@@ -81,7 +84,11 @@ def report_disaster():
     db.session.commit()
 
     return _success(
-        {'report': report.to_dict(), 'severity': severity},
+        {
+            'report':   report.to_dict(),
+            'severity': severity,
+            'ai_note':  ai_prediction.get('note'),
+        },
         'Disaster report submitted successfully',
         201
     )
@@ -89,6 +96,7 @@ def report_disaster():
 
 # ── GET /reports ───────────────────────────────────────────────────────────────
 @reports_bp.route('/reports', methods=['GET'])
+@jwt_required()
 def get_reports():
     disaster_type = request.args.get('type')
     query = DisasterReport.query.order_by(DisasterReport.created_at.desc())
@@ -100,6 +108,7 @@ def get_reports():
 
 # ── GET /report/<id> ───────────────────────────────────────────────────────────
 @reports_bp.route('/report/<int:report_id>', methods=['GET'])
+@jwt_required()
 def get_report(report_id):
     report = db.get_or_404(DisasterReport, report_id)
     return _success({'report': report.to_dict()})

@@ -31,7 +31,13 @@ def detect_duplicate(
       - Within location_radius_km distance
       - Submitted within the last time_window_minutes minutes
     """
-    cutoff = datetime.now(timezone.utc) - timedelta(minutes=time_window_minutes)
+    # `created_at` columns are always written as UTC (see models.py), but
+    # depending on the DB driver they may round-trip as naive datetimes
+    # (no tzinfo) even though the value itself is UTC. Comparing a naive
+    # and an aware datetime raises TypeError, so the cutoff is kept naive
+    # here and every `req.created_at` is normalized to naive-UTC before
+    # comparison, regardless of whether the driver preserved tzinfo.
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=time_window_minutes)
     new_lat  = float(new_request['latitude'])
     new_lng  = float(new_request['longitude'])
     new_type = new_request['request_type']
@@ -39,7 +45,10 @@ def detect_duplicate(
     for req in existing_requests:
         if req.request_type != new_type:
             continue
-        if req.created_at and req.created_at < cutoff:
+        req_created_at = req.created_at
+        if req_created_at and req_created_at.tzinfo is not None:
+            req_created_at = req_created_at.astimezone(timezone.utc).replace(tzinfo=None)
+        if req_created_at and req_created_at < cutoff:
             continue
         dist = haversine(new_lat, new_lng, float(req.latitude), float(req.longitude))
         if dist <= location_radius_km:

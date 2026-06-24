@@ -17,7 +17,7 @@ function computeAIPriority(requestType, people) {
 }
 
 function updateAIPreview() {
-  const type   = document.getElementById('request-type')?.value;
+  const type = document.getElementById('request-type')?.value;
   const people = document.getElementById('people-count')?.value;
 
   if (!type || !people) return;
@@ -37,11 +37,11 @@ function updateAIPreview() {
   document.getElementById('ai-priority-reason').textContent = reason;
 
   // Forecast
-  const foodPkts  = Math.ceil(parseInt(people) * 1.5);
+  const foodPkts = Math.ceil(parseInt(people) * 1.5);
   const waterLits = parseInt(people) * 3;
-  const medKits   = Math.ceil(parseInt(people) / 5);
-  document.getElementById('ai-food-forecast').textContent    = `${foodPkts} meal packets/day`;
-  document.getElementById('ai-water-forecast').textContent   = `${waterLits}L drinking water/day`;
+  const medKits = Math.ceil(parseInt(people) / 5);
+  document.getElementById('ai-food-forecast').textContent = `${foodPkts} meal packets/day`;
+  document.getElementById('ai-water-forecast').textContent = `${waterLits}L drinking water/day`;
   document.getElementById('ai-medical-forecast').textContent = `${medKits} first-aid kits`;
 }
 
@@ -137,7 +137,7 @@ function initImageUpload() {
   }
 }
 
-window.removeImage = function() {
+window.removeImage = function () {
   uploadedImage = null;
   const preview = document.getElementById('img-preview');
   const drop = document.getElementById('img-drop-area');
@@ -149,11 +149,11 @@ window.removeImage = function() {
 async function handleHelpRequest(e) {
   e.preventDefault();
 
-  const name    = document.getElementById('req-name').value.trim();
+  const name = document.getElementById('req-name').value.trim();
   const contact = document.getElementById('req-contact').value.trim();
-  const type    = document.getElementById('request-type').value;
-  const people  = document.getElementById('people-count').value;
-  const desc    = document.getElementById('req-description').value.trim();
+  const type = document.getElementById('request-type').value;
+  const people = document.getElementById('people-count').value;
+  const desc = document.getElementById('req-description').value.trim();
 
   if (!name || !contact || !type || !people) { Toast.show('Please fill in all required fields', 'warning'); return; }
   if (!userLocation) { Toast.show('Please select your location on the map or click "Detect Location"', 'warning'); return; }
@@ -176,17 +176,44 @@ async function handleHelpRequest(e) {
 
   const res = await Api.postForm('/help-request', formData);
 
+  // ── Network failure: Api.postForm returns null on a thrown/network error ──
+  if (res === null) {
+    Toast.show('Network error — could not reach the server. Please check your connection and try again.', 'danger', 5000);
+    btn.disabled = false;
+    btn.innerHTML = '🆘 Submit Help Request';
+    return;
+  }
+
+  // ── Backend validation / server error: never show success UI for these ──
+  if (!res.success) {
+    Toast.show(res.message || 'Could not submit help request. Please try again.', 'danger', 5000);
+    btn.disabled = false;
+    btn.innerHTML = '🆘 Submit Help Request';
+    return;
+  }
+
+  // ── Use the server-computed priority/status as the source of truth ──
+  const serverPriority = res.request?.priority_level || level;
+  const isDuplicate = res.request?.status === 'Duplicate' || res.ai?.is_duplicate === true;
+
   document.getElementById('help-form').style.display = 'none';
   document.getElementById('success-state').style.display = 'flex';
-  document.getElementById('success-priority').textContent = level;
-  document.getElementById('success-priority').className = `badge-${level.toLowerCase()}`;
+  document.getElementById('success-priority').textContent = serverPriority;
+  document.getElementById('success-priority').className = `badge-${serverPriority.toLowerCase()}`;
 
   const mapLink = document.getElementById('success-map-link');
   if (mapLink && res?.request?.request_id) {
     mapLink.href = `map.html?request_id=${res.request.request_id}`;
   }
 
-  Toast.show(`Help request submitted! Priority: ${level} 🚨`, level === 'High' ? 'danger' : 'success');
+  if (isDuplicate) {
+    // Submission succeeded, but it was flagged as a duplicate of an existing
+    // active request nearby — make this clearly visible instead of presenting
+    // it identically to a brand-new, actively-routed request.
+    Toast.show('A similar request from your area was already submitted recently. This one has been recorded as a duplicate and will not be separately dispatched.', 'warning', 6000);
+  } else {
+    Toast.show(`Help request submitted! Priority: ${serverPriority} 🚨`, serverPriority === 'High' ? 'danger' : 'success');
+  }
 }
 
 /* ── Init ── */

@@ -11,7 +11,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
 
 from extensions import db
-from models import User, HelpRequest
+from models import User, HelpRequest, Volunteer, ReliefTask
 from ai.priority  import predict_priority
 from ai.duplicate import detect_duplicate
 from ai.severity  import classify_severity
@@ -167,7 +167,16 @@ def get_help_requests():
 @help_bp.route('/help-request/<int:req_id>', methods=['GET'])
 @require_any_role(['victim', 'volunteer', 'ngo', 'admin'])
 def get_help_request(req_id):
-    req = db.get_or_404(HelpRequest, req_id)
+    uid  = int(get_jwt_identity())
+    user = db.get_or_404(User, uid)
+    req  = db.get_or_404(HelpRequest, req_id)
+
+    # Victims may only view their own requests — volunteers/ngo/admin need
+    # broad read access to evaluate requests (e.g. before accepting a task),
+    # so only the victim role is ownership-scoped here.
+    if user.role == 'victim' and req.user_id != uid:
+        return _error('You do not have permission to view this request', 403)
+
     return _success({'request': req.to_dict()})
 
 
@@ -175,6 +184,8 @@ def get_help_request(req_id):
 @help_bp.route('/help-request/status', methods=['PUT'])
 @require_any_role(['volunteer', 'ngo', 'admin'])  # Victims cannot change status
 def update_request_status():
+    uid  = int(get_jwt_identity())
+    user = db.get_or_404(User, uid)
     data   = request.get_json(silent=True) or {}
     req_id = data.get('request_id')
     status = data.get('status', '').strip()
@@ -184,6 +195,19 @@ def update_request_status():
         return _error(f'status must be one of {valid_statuses}')
 
     req = db.get_or_404(HelpRequest, req_id)
+
+    # Volunteers may only update the status of a request they are actually
+    # assigned to (i.e. they hold an active ReliefTask against it).
+    # NGO and admin retain full access, consistent with their existing
+    # broad read access to all help requests.
+    if user.role == 'volunteer':
+        vol = Volunteer.query.filter_by(user_id=uid).first()
+        is_assigned = bool(vol) and ReliefTask.query.filter_by(
+            volunteer_id=vol.volunteer_id, request_id=req_id
+        ).first() is not None
+        if not is_assigned:
+            return _error('You can only update the status of requests assigned to you', 403)
+
     req.status = status
     db.session.commit()
     return _success({'request': req.to_dict()}, 'Status updated')

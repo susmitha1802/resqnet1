@@ -165,21 +165,27 @@ SWAGGER_TEMPLATE = {
         },
         "/reports": {
             "get": {
-                "tags":    ["Reports"],
-                "summary": "List recent disaster reports (no auth needed)",
+                "tags":     ["Reports"],
+                "summary":  "List recent disaster reports",
+                "security": [{"BearerAuth": []}],
                 "parameters": [
                     {"in": "query", "name": "type", "type": "string", "enum": ["Flood","Cyclone","Earthquake","Landslide","Fire"], "required": False},
                 ],
-                "responses": {"200": {"description": "Array of disaster reports"}},
+                "responses": {
+                    "200": {"description": "Array of disaster reports"},
+                    "401": {"description": "Missing or invalid token"},
+                },
             }
         },
         "/report/{report_id}": {
             "get": {
-                "tags":    ["Reports"],
-                "summary": "Get a single disaster report by ID",
+                "tags":     ["Reports"],
+                "summary":  "Get a single disaster report by ID",
+                "security": [{"BearerAuth": []}],
                 "parameters": [{"in": "path", "name": "report_id", "required": True, "type": "integer"}],
                 "responses": {
                     "200": {"description": "Report object"},
+                    "401": {"description": "Missing or invalid token"},
                     "404": {"description": "Not found"},
                 },
             }

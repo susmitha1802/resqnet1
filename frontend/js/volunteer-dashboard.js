@@ -3,23 +3,23 @@
  * All data loaded from the real API — no mock data.
  */
 
-let nearbyRequests    = [];
-let myTasks           = [];
+let nearbyRequests = [];
+let myTasks = [];
 let availabilityStatus = true;
-let volunteerLat      = 17.3850; // Fallback to Hyderabad
-let volunteerLng      = 78.4867;
-let miniMapInstance   = null;
-let volunteerMarker   = null;
+let volunteerLat = 17.3850; // Fallback to Hyderabad
+let volunteerLng = 78.4867;
+let miniMapInstance = null;
+let volunteerMarker = null;
 
 /* ── Haversine Distance ── */
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371; // km
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
 
@@ -27,7 +27,7 @@ function haversine(lat1, lon1, lat2, lon2) {
 function populateVolunteerInfo() {
   const user = Session.get();
   if (!user) return;
-  const name     = user.name || 'Volunteer';
+  const name = user.name || 'Volunteer';
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   const avEl = document.getElementById('sidebar-avatar');
@@ -45,15 +45,15 @@ function populateVolunteerInfo() {
 
 /* ── Stats ── */
 function updateStats() {
-  const total    = nearbyRequests.length;
+  const total = nearbyRequests.length;
   const within5km = nearbyRequests.filter(r => r.distance != null && r.distance <= 5).length;
-  const high     = nearbyRequests.filter(r => r.priority_level === 'High').length;
+  const high = nearbyRequests.filter(r => r.priority_level === 'High').length;
   const accepted = myTasks.length;
-  const done     = myTasks.filter(t => t.status === 'Completed').length;
+  const done = myTasks.filter(t => t.status === 'Completed').length;
 
-  animateStatCounter('stat-nearby',    total);
-  animateStatCounter('stat-high',      high);
-  animateStatCounter('stat-accepted',  accepted);
+  animateStatCounter('stat-nearby', total);
+  animateStatCounter('stat-high', high);
+  animateStatCounter('stat-accepted', accepted);
   animateStatCounter('stat-completed', done);
 
   // Widget update
@@ -110,12 +110,12 @@ function renderNearbyRequests(requests) {
       </div>
       <p class="request-card-desc">${r.description || 'No description provided.'}</p>
       <div class="request-card-actions">
-        ${r.is_report 
-          ? `<div class="btn-resq-secondary" style="padding:9px 20px;font-size:0.85rem;background:rgba(249,115,22,0.1);color:#F97316;border:1px solid rgba(249,115,22,0.3);text-align:center;cursor:default">🔥 Hazard Alert</div>`
-          : r.status === 'Pending'
-            ? `<button class="btn-resq-primary" style="padding:9px 20px;font-size:0.85rem" onclick="acceptTask(${r.request_id})">✅ Accept Task</button>`
-            : `<button class="btn-resq-secondary" style="padding:9px 20px;font-size:0.85rem" disabled>🔄 ${r.status}</button>`
-        }
+        ${r.is_report
+      ? `<div class="btn-resq-secondary" style="padding:9px 20px;font-size:0.85rem;background:rgba(249,115,22,0.1);color:#F97316;border:1px solid rgba(249,115,22,0.3);text-align:center;cursor:default">🔥 Hazard Alert</div>`
+      : r.status === 'Pending'
+        ? `<button class="btn-resq-primary" style="padding:9px 20px;font-size:0.85rem" onclick="acceptTask(${r.request_id})">✅ Accept Task</button>`
+        : `<button class="btn-resq-secondary" style="padding:9px 20px;font-size:0.85rem" disabled>🔄 ${r.status}</button>`
+    }
         ${r.is_report ? '' : `<a href="tel:${r.contact}" class="btn-resq-outline" style="padding:9px 20px;font-size:0.85rem">📞 Call</a>`}
         <button class="btn-resq-secondary" style="padding:9px 20px;font-size:0.85rem" onclick="viewOnMap(${r.latitude},${r.longitude},'${r.is_report ? 'R' + r.report_id : r.request_id}')">🗺️ Navigate</button>
       </div>
@@ -150,18 +150,18 @@ async function submitProof(event, taskId) {
   event.preventDefault();
   const fileInput = document.getElementById(`proof_img_${taskId}`);
   const notesInput = document.getElementById(`proof_notes_${taskId}`);
-  
+
   const file = fileInput.files[0];
   if (!file) return Toast.show('Please select an image', 'warning');
-  
+
   const formData = new FormData();
   formData.append('proof_image', file);
   formData.append('notes', notesInput.value);
-  
+
   const btn = event.target.querySelector('button');
   btn.disabled = true;
   btn.textContent = 'Uploading...';
-  
+
   try {
     const res = await fetch(`${API_BASE}/volunteer/upload-proof/${taskId}`, {
       method: 'POST',
@@ -203,15 +203,15 @@ function renderMyTasks() {
       <td style="color:var(--text-secondary);font-size:0.82rem">${timeAgo(t.assigned_at)}</td>
       <td>
         ${['Assigned', 'En Route', 'On Site'].includes(t.status)
-          ? `<form onsubmit="submitProof(event, ${t.task_id})" style="display:flex; flex-direction:column; gap:5px; max-width:250px;">
+      ? `<form onsubmit="submitProof(event, ${t.task_id})" style="display:flex; flex-direction:column; gap:5px; max-width:250px;">
                <input type="file" id="proof_img_${t.task_id}" accept="image/*" required class="resq-input" style="padding: 4px; font-size:0.75rem;">
                <textarea id="proof_notes_${t.task_id}" placeholder="Completion notes" class="resq-input" style="min-height:40px; font-size:0.75rem; padding:4px;" required></textarea>
                <button type="submit" class="btn-resq-primary" style="padding:4px 10px; font-size:0.75rem">📤 Upload Proof</button>
              </form>`
-          : t.status === 'Proof Submitted'
-          ? `<span class="badge-pending">⏳ Pending Admin</span>`
-          : `<span style="color:var(--text-muted);font-size:0.82rem">${t.status}</span>`
-        }
+      : t.status === 'Proof Submitted'
+        ? `<span class="badge-pending">⏳ Pending Admin</span>`
+        : `<span style="color:var(--text-muted);font-size:0.82rem">${t.status}</span>`
+    }
       </td>
     </tr>
   `).join('');
@@ -242,7 +242,7 @@ async function loadNearbyRequests() {
   }));
 
   let combined = [...pending, ...mergedReports];
-  
+
   // Calculate distance for all requests
   combined.forEach(r => {
     if (r.latitude != null && r.longitude != null) {
@@ -260,7 +260,7 @@ async function loadNearbyRequests() {
 async function loadMyTasks() {
   const data = await Api.get('/volunteer/tasks');
   let tasks = data?.tasks || [];
-  
+
   myTasks = tasks;
   renderMyTasks();
   updateStats();
@@ -268,13 +268,13 @@ async function loadMyTasks() {
 
 /* ── Filter ── */
 function applyFilters() {
-  const prio  = document.getElementById('priority-filter')?.value || '';
-  const type  = document.getElementById('type-filter')?.value     || '';
+  const prio = document.getElementById('priority-filter')?.value || '';
+  const type = document.getElementById('type-filter')?.value || '';
   const query = document.getElementById('search-input')?.value?.toLowerCase() || '';
 
   let filtered = [...nearbyRequests];
-  if (prio && prio !== 'Nearest')  filtered = filtered.filter(r => r.priority_level === prio);
-  if (type)  filtered = filtered.filter(r => r.request_type === type);
+  if (prio && prio !== 'Nearest') filtered = filtered.filter(r => r.priority_level === prio);
+  if (type) filtered = filtered.filter(r => r.request_type === type);
   if (query) filtered = filtered.filter(r =>
     r.request_type?.toLowerCase().includes(query) ||
     r.description?.toLowerCase().includes(query) ||
@@ -306,7 +306,7 @@ function initFilters() {
 function initAvailabilityToggle() {
   const toggle = document.getElementById('availability-toggle');
   const banner = document.getElementById('availability-banner');
-  const label  = document.getElementById('availability-label');
+  const label = document.getElementById('availability-label');
 
   toggle?.addEventListener('change', async () => {
     availabilityStatus = toggle.checked;
@@ -356,11 +356,11 @@ async function syncLocation() {
 async function updateLocationManually() {
   const btn = document.getElementById('update-loc-btn');
   if (btn) btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Updating...';
-  
+
   await syncLocation();
   await loadNearbyRequests(); // Recalculate distance
   if (typeof initVolMap === 'function') await initVolMap();
-  
+
   Toast.show('Location updated successfully', 'success');
   if (btn) btn.innerHTML = '📍 Update My Location';
 }
@@ -386,7 +386,7 @@ async function initVolMap() {
         if (!r.latitude || !r.longitude) return;
         const priority = r.priority_level || 'Medium';
         const color = ResQMap.priorityColor(priority);
-        const icon  = priority === 'High' ? ResQMap.pulseIcon(color) : ResQMap.circleIcon(color, 10);
+        const icon = priority === 'High' ? ResQMap.pulseIcon(color) : ResQMap.circleIcon(color, 10);
         L.marker([parseFloat(r.latitude), parseFloat(r.longitude)], { icon })
           .bindPopup(ResQMap.popupHtml(`<b>${r.request_type || r.disaster_type || 'Disaster'}</b><br>${priority} Priority`))
           .addTo(miniMapInstance);
@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await Promise.all([loadNearbyRequests(), loadMyTasks()]);
 });
 
-window.acceptTask   = acceptTask;
-window.completeTask = completeTask;
-window.viewOnMap    = viewOnMap;
+window.acceptTask = acceptTask;
+window.submitProof = submitProof;
+window.viewOnMap = viewOnMap;
 window.updateLocationManually = updateLocationManually;

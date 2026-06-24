@@ -11,7 +11,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import get_jwt_identity
 
 from extensions import db
-from models import User, HelpRequest, DisasterReport
+from models import User, HelpRequest, DisasterReport, ReliefResource
 from routes.middleware import require_role, require_any_role
 
 ngo_bp = Blueprint('ngo', __name__)
@@ -23,13 +23,6 @@ def _success(data=None, message='OK', status=200):
 
 def _error(message='Error', status=400):
     return jsonify({'success': False, 'message': message}), status
-
-
-# ── In-memory resource store (replace with a DB model in production) ──────────
-# For now we store resources in a simple dict keyed by ID.
-# In a real system you'd add a ReliefResource model.
-_resources: dict[int, dict] = {}
-_resource_id_counter = [1]
 
 
 # ── GET /ngo/dashboard ─────────────────────────────────────────────────────────
@@ -59,8 +52,8 @@ def ngo_dashboard():
         'high_priority_requests': HelpRequest.query.filter_by(priority_level='High', status='Pending').count(),
         'completed_requests':     HelpRequest.query.filter_by(status='Completed').count(),
         'disaster_reports':       DisasterReport.query.count(),
-        'resources_in_inventory': len(_resources),
-        'allocated_resources':    sum(1 for r in _resources.values() if r.get('allocated_to')),
+        'resources_in_inventory': ReliefResource.query.count(),
+        'allocated_resources':    ReliefResource.query.filter(ReliefResource.allocated_to.isnot(None)).count(),
     }
 
     # Recent 5 high-priority pending requests
@@ -93,9 +86,10 @@ def get_ngo_resources():
       200:
         description: List of resources
     """
+    resources = ReliefResource.query.order_by(ReliefResource.added_at.desc()).all()
     return _success({
-        'resources': list(_resources.values()),
-        'total':     len(_resources),
+        'resources': [r.to_dict() for r in resources],
+        'total':     len(resources),
     })
 
 
@@ -138,23 +132,18 @@ def add_ngo_resource():
     if not name or quantity <= 0:
         return _error('name and quantity (>0) are required')
 
-    rid = _resource_id_counter[0]
-    _resource_id_counter[0] += 1
+    resource = ReliefResource(
+        name     = name,
+        category = category,
+        quantity = quantity,
+        unit     = unit,
+        location = location,
+        added_by = uid,
+    )
+    db.session.add(resource)
+    db.session.commit()
 
-    resource = {
-        'resource_id':  rid,
-        'name':         name,
-        'category':     category,
-        'quantity':     quantity,
-        'unit':         unit,
-        'location':     location,
-        'allocated_to': None,
-        'added_by':     uid,
-        'added_at':     datetime.now(timezone.utc).isoformat(),
-    }
-    _resources[rid] = resource
-
-    return _success({'resource': resource}, 'Resource added to inventory', 201)
+    return _success({'resource': resource.to_dict()}, 'Resource added to inventory', 201)
 
 
 # ── GET /ngo/requests ──────────────────────────────────────────────────────────
@@ -232,18 +221,22 @@ def ngo_allocate_resource():
     if not resource_id or not request_id:
         return _error('resource_id and request_id are required')
 
-    resource = _resources.get(resource_id)
+    resource = db.session.get(ReliefResource, resource_id)
     if not resource:
         return _error(f'Resource {resource_id} not found', 404)
+
+    if resource.allocated_to is not None:
+        return _error(f'Resource {resource_id} is already allocated to request #{resource.allocated_to}', 409)
 
     req = db.session.get(HelpRequest, request_id)
     if not req:
         return _error(f'Help request {request_id} not found', 404)
 
-    resource['allocated_to'] = request_id
-    resource['allocated_at'] = datetime.now(timezone.utc).isoformat()
+    resource.allocated_to = request_id
+    resource.allocated_at = datetime.now(timezone.utc)
+    db.session.commit()
 
     return _success({
-        'resource': resource,
+        'resource': resource.to_dict(),
         'request':  req.to_dict(),
     }, 'Resource allocated successfully')
