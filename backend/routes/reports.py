@@ -12,7 +12,6 @@ from werkzeug.utils import secure_filename
 from extensions import db
 from models import DisasterReport
 from ai.severity import classify_severity
-from ai.disaster_classifier import predict_disaster
 
 reports_bp = Blueprint('reports', __name__)
 
@@ -60,15 +59,10 @@ def report_disaster():
 
     # Save image (first file if multiple)
     img_path = None
-    ai_prediction = {"predicted_disaster_type": "Unknown", "confidence": 0.0, "note": None}
     if 'images' in request.files:
         img_path = _save_file(request.files['images'], 'reports')
         if not img_path:
             return _error('Uploaded image format is not supported or file is invalid', 400)
-        # Pass the user-reported type through so the classifier can tell us
-        # explicitly when it has no model support for that disaster type
-        # (e.g. "Landslide"), instead of silently returning "Unknown".
-        ai_prediction = predict_disaster(img_path, reported_disaster_type=disaster_type)
 
     severity = classify_severity(image_path=img_path, disaster_type=disaster_type)
 
@@ -77,8 +71,8 @@ def report_disaster():
         disaster_type           = disaster_type,
         description             = description,
         image_path              = img_path,
-        predicted_disaster_type = str(ai_prediction.get('predicted_disaster_type')) if ai_prediction.get('predicted_disaster_type') is not None else None,
-        prediction_confidence   = float(ai_prediction.get('confidence')) if ai_prediction.get('confidence') is not None else None,
+        predicted_disaster_type = disaster_type,
+        prediction_confidence   = None,
         severity                = severity,
         latitude                = float(latitude),  # type: ignore
         longitude               = float(longitude), # type: ignore
@@ -90,7 +84,7 @@ def report_disaster():
         {
             'report':   report.to_dict(),
             'severity': severity,
-            'ai_note':  ai_prediction.get('note'),
+            'ai_note':  None,
         },
         'Disaster report submitted successfully',
         201

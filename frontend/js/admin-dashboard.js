@@ -282,12 +282,11 @@ async function loadDisasters() {
     }
 
     tbody.innerHTML = reports.map(r => `
-      <tr style="${r.ai_mismatch ? 'background:rgba(239,68,68,0.04);border-left:3px solid #EF4444' : ''}">
+      <tr>
         <td style="font-weight:600">#${r.report_id}</td>
         <td>${r.user_name || 'User ' + r.user_id}</td>
         <td>
           🔥 ${r.disaster_type}
-          ${r.ai_mismatch ? `<br><span title="CNN predicted a different disaster type" style="display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:2px 7px;border-radius:4px;background:rgba(239,68,68,0.15);color:#EF4444;font-size:0.7rem;font-weight:700;border:1px solid rgba(239,68,68,0.3);">⚠️ AI Mismatch</span>` : ''}
         </td>
         <td>
           <span class="priority-badge" style="
@@ -298,9 +297,9 @@ async function loadDisasters() {
         <td style="color:var(--text-secondary)">📍 ${parseFloat(r.latitude).toFixed(4)}, ${parseFloat(r.longitude).toFixed(4)}</td>
         <td>
           <div style="font-size:0.75rem;line-height:1.4">
-            <strong>${r.predicted_disaster_type || 'Unknown'}</strong><br>
-            <span style="color:var(--text-muted)">${(r.prediction_confidence !== null && r.prediction_confidence !== undefined) ? r.prediction_confidence + '%' : 'N/A'}</span>
-            ${r.ai_mismatch ? `<br><span style="color:#F59E0B;font-size:0.7rem">Reported: ${r.disaster_type}</span>` : ''}
+            <strong>AI Analysis</strong><br>
+            <span style="color:var(--text-muted)">Status:</span><br>
+            <span style="color:#F59E0B">Pending Manual Verification</span>
           </div>
         </td>
         <td style="color:var(--text-secondary)">${new Date(r.created_at).toLocaleString()}</td>
