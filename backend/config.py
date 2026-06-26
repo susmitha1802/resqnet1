@@ -28,8 +28,11 @@ class Config:
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
     # CORS
-    _cors = os.getenv('CORS_ORIGINS', 'http://127.0.0.1:5500,http://localhost:5500,*')
-    CORS_ORIGINS = [o.strip() for o in _cors.split(',')]
+    _cors = os.getenv(
+        "CORS_ORIGINS",
+        "http://127.0.0.1:5500,http://localhost:5500,https://resqnet1-2026.netlify.app"
+    )
+    CORS_ORIGINS = [o.strip() for o in _cors.split(",")]
 
     # Maps & Geocoding (Currently Leaflet + Nominatim are free, but keys can be provided for Mapbox/LocationIQ)
     MAP_PROVIDER = os.getenv('MAP_PROVIDER', 'leaflet')
