@@ -60,4 +60,4 @@ A dynamic geospatial interface that visualizes:
    python app.py
    ```
 5. Open `frontend/index.html` in your browser, or serve the directory using any HTTP server (e.g. `npx serve frontend`).
->>>>>>> 3007145 (Fix workflow)
+
