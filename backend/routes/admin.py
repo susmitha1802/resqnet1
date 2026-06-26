@@ -213,3 +213,19 @@ def verify_task(task_id):
 
     db.session.commit()
     return _success({'task': task.to_dict()}, f'Task {action.lower()}d successfully')
+
+
+# ── PUT /admin/report/<report_id>/override ─────────────────────────────────────
+@admin_bp.route('/admin/report/<int:report_id>/override', methods=['PUT'])
+@require_role('admin')
+def override_report(report_id):
+    data = request.get_json(silent=True) or {}
+    new_type = data.get('disaster_type')
+    
+    report = db.get_or_404(DisasterReport, report_id)
+    if new_type:
+        report.disaster_type = new_type
+        db.session.commit()
+        return _success({'report': report.to_dict()}, 'Report overridden successfully')
+    
+    return _error('disaster_type is required')

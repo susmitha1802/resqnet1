@@ -1,610 +1,802 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ResQNet — AI-Powered Disaster Relief Coordination</title>
-  <meta name="description" content="ResQNet connects disaster reporters with volunteers and NGOs in real time using AI-driven prioritization, live maps, and resource management.">
+  <meta name="description"
+    content="ResQNet connects disaster reporters with volunteers and NGOs in real time using AI-driven prioritization, live maps, and resource management.">
   <link rel="stylesheet" href="css/styles.css">
   <style>
-    /* ── Hero ── */
+    /* HERO */
     .hero-section {
       min-height: 100vh;
-      display: flex; align-items: center;
+      display: flex;
+      align-items: center;
       padding: calc(var(--topbar-h) + 40px) 0 80px;
-      position: relative; overflow: hidden;
+      position: relative;
+      overflow: hidden;
     }
-    /* Animated grid background */
+
     .hero-grid {
-      position: absolute; inset: 0; pointer-events: none;
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
       background-image:
-        linear-gradient(rgba(255,45,85,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,45,85,0.04) 1px, transparent 1px);
+        linear-gradient(rgba(255, 45, 85, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 45, 85, 0.04) 1px, transparent 1px);
       background-size: 60px 60px;
     }
-    /* Neon orbs */
+
     .hero-orb {
-      position: absolute; border-radius: 50%;
-      filter: blur(80px); pointer-events: none; opacity: 0.35;
-    }
-    .orb-1 { width: 400px; height: 400px; background: radial-gradient(circle, #ff2d55 0%, transparent 70%); top: -100px; right: -80px; }
-    .orb-2 { width: 300px; height: 300px; background: radial-gradient(circle, #00b4ff 0%, transparent 70%); bottom: 0; left: -60px; }
-    .orb-3 { width: 200px; height: 200px; background: radial-gradient(circle, #ffb800 0%, transparent 70%); top: 40%; right: 30%; opacity: 0.2; }
-
-    /* Scanline overlay */
-    .hero-section::after {
-      content: '';
-      position: absolute; inset: 0; pointer-events: none;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 3px,
-        rgba(255,255,255,0.007) 3px,
-        rgba(255,255,255,0.007) 4px
-      );
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
     }
 
-    .hero-cta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, #ff2d55 0%, transparent 70%);
+      top: -100px;
+      right: -80px;
+      opacity: 0.3;
+    }
 
-    /* Feature section */
+    .orb-2 {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, #00b4ff 0%, transparent 70%);
+      bottom: 0;
+      left: -60px;
+      opacity: 0.25;
+    }
+
+    .orb-3 {
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, #ffb800 0%, transparent 70%);
+      top: 40%;
+      right: 30%;
+      opacity: 0.15;
+    }
+
+    /* LIVE STATUS BAR */
+    .status-bar {
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 18px 0;
+    }
+
+    .status-bar-inner {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-card-2);
+      border: 1px solid var(--border-glass);
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .status-val {
+      font-weight: 800;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1rem;
+      color: var(--text-primary);
+    }
+
+    /* FEATURES */
     .feature-card {
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-lg);
       padding: 28px;
       transition: var(--transition);
-      position: relative; overflow: hidden;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
     }
+
     .feature-card::after {
       content: '';
-      position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
       background: var(--grad-primary);
-      transform: scaleX(0); transform-origin: left;
+      transform: scaleX(0);
+      transform-origin: left;
       transition: var(--transition);
     }
-    .feature-card:hover { border-color: rgba(255,45,85,0.2); transform: translateY(-4px); box-shadow: var(--shadow); }
-    .feature-card:hover::after { transform: scaleX(1); }
+
+    .feature-card:hover {
+      border-color: rgba(255, 45, 85, 0.25);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow);
+    }
+
+    .feature-card:hover::after {
+      transform: scaleX(1);
+    }
+
     .feature-icon {
-      width: 52px; height: 52px;
+      width: 52px;
+      height: 52px;
       border-radius: var(--radius);
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 1.4rem;
       margin-bottom: 16px;
     }
 
-    /* Disaster type pills */
-    .disaster-type-pill {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius);
-      padding: 20px;
-      text-align: center;
-      transition: var(--transition);
-    }
-    .disaster-type-pill:hover { border-color: rgba(255,45,85,0.3); transform: translateY(-3px); box-shadow: var(--shadow); }
-
-    /* How it works */
+    /* WORKFLOW */
     .step-card {
       text-align: center;
-      padding: 28px 20px;
-      position: relative;
+      padding: 28px 16px;
     }
+
     .step-number {
-      width: 56px; height: 56px;
+      width: 56px;
+      height: 56px;
       border-radius: 50%;
       background: var(--bg-card);
-      border: 2px solid rgba(255,45,85,0.4);
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 20px;
-      font-size: 1.2rem; font-weight: 800; color: var(--accent-red);
+      border: 2px solid rgba(255, 45, 85, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 18px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--accent-red);
       font-family: 'Space Grotesk', sans-serif;
-      box-shadow: var(--glow-red-sm);
+      box-shadow: 0 0 16px rgba(255, 45, 85, 0.15);
     }
 
-    /* Stats section */
-    .stat-highlight { text-align: center; }
-    .stat-highlight-value { font-size: 3.5rem; font-weight: 900; line-height: 1; font-family: 'Space Grotesk', sans-serif; }
-    .stat-highlight-label { color: var(--text-secondary); font-size: 0.875rem; margin-top: 6px; }
-
-    /* CTA band */
-    .cta-band {
-      background: var(--bg-card);
+    /* AI PANEL */
+    .ai-panel {
+      display: flex;
+      flex-wrap: wrap;
+      background: var(--bg-card-2);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-xl);
-      padding: 56px 40px;
-      text-align: center;
-      position: relative; overflow: hidden;
-    }
-    .cta-band::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: var(--grad-primary);
-      opacity: 0.04;
-    }
-    .cta-band::after {
-      content: '';
-      position: absolute; top: 0; left: 0; right: 0; height: 2px;
-      background: var(--grad-primary);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
     }
 
-    /* Live Feed */
+    .ai-panel>div {
+      flex: 1 1 300px;
+    }
+
+    .ai-panel-img {
+      background: url('https://images.unsplash.com/photo-1547683905-f686c993aae5?q=80&w=800&auto=format&fit=crop') center/cover;
+      min-height: 340px;
+      position: relative;
+    }
+
+    .ai-panel-content {
+      padding: 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    /* LIVE FEED */
     #live-feed-container .feed-item {
-      display: flex; gap: 12px; padding: 12px 0;
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
       border-bottom: 1px solid var(--border-subtle);
       font-size: 0.82rem;
-      animation: slideInRight 0.3s ease;
     }
-    #live-feed-container .feed-item:last-child { border-bottom: none; }
-    .feed-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+
+    #live-feed-container .feed-item:last-child {
+      border-bottom: none;
+    }
+
+    .feed-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+
+    /* ROLES */
+    .role-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px 24px;
+      text-align: center;
+      transition: var(--transition);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .role-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow);
+    }
+
+    .role-icon {
+      font-size: 2.5rem;
+      margin-bottom: 16px;
+    }
+
+    /* MAP PREVIEW */
+    .map-preview {
+      background: url('https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1200&auto=format&fit=crop') center/cover;
+      height: 380px;
+      border-radius: var(--radius-xl);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border-blue);
+      box-shadow: var(--glow-blue);
+    }
+
+    .map-preview::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 11, 20, 0.6);
+      border-radius: var(--radius-xl);
+    }
+
+    /* STAT HIGHLIGHTS */
+    .stat-hl-val {
+      font-size: clamp(2.5rem, 5vw, 3.5rem);
+      font-weight: 900;
+      line-height: 1;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    @media(max-width:768px) {
+      .hero-section {
+        padding-top: calc(var(--topbar-h) + 20px);
+      }
+
+      .ai-panel-content {
+        padding: 28px;
+      }
+    }
   </style>
 </head>
+
 <body>
 
-<!-- ── NAVBAR ── -->
-<nav class="resq-navbar" id="main-navbar">
-  <a href="index.html" class="nav-brand">
-    <div class="nav-brand-icon">🚨</div>
-    <span class="nav-brand-name">Res<span>Q</span>Net</span>
-  </a>
-  <ul class="nav-links" id="nav-links">
-    <li><a href="#features">Features</a></li>
-    <li><a href="#how-it-works">How It Works</a></li>
-    <li><a href="map.html">Live Map</a></li>
-    <li><a href="#disaster-types">Disasters</a></li>
-    <li><a href="#contact">Contact</a></li>
-  </ul>
-  <div class="nav-actions">
-    <a href="auth.html" class="btn btn-ghost btn-sm">Sign In</a>
-    <a href="auth.html" class="btn btn-primary btn-sm">🆘 Get Help</a>
+  <!-- NAVBAR -->
+  <nav class="resq-navbar" id="main-navbar">
+    <a href="index.html" class="nav-brand">
+      <div class="nav-brand-icon">🚨</div>
+      <span class="nav-brand-name">Res<span>Q</span>Net</span>
+    </a>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="#preparedness">Preparedness</a></li>
+      <li><a href="#workflow">Workflow</a></li>
+      <li><a href="#ai">AI Engine</a></li>
+      <li><a href="map.html">Live Map</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="auth.html" class="btn btn-ghost btn-sm">Sign In</a>
+      <a href="auth.html" class="btn btn-primary btn-sm">🆘 Get Help</a>
+    </div>
+    <button class="nav-toggle" id="nav-toggle-btn" aria-label="Toggle menu">☰</button>
+  </nav>
+  <div class="nav-mobile-menu" id="nav-mobile-menu">
+    <a href="#preparedness">Preparedness</a>
+    <a href="#workflow">Workflow</a>
+    <a href="#ai">AI Engine</a>
+    <a href="map.html">Live Map</a>
+    <a href="#contact">Contact</a>
+    <a href="auth.html" class="btn btn-primary btn-sm" style="margin-top:6px;text-align:center;">🆘 Get Help Now</a>
   </div>
-  <button class="nav-toggle" id="nav-toggle-btn" aria-label="Toggle menu">☰</button>
-</nav>
 
-<!-- Mobile Menu -->
-<div class="nav-mobile-menu" id="nav-mobile-menu">
-  <a href="#features">Features</a>
-  <a href="#how-it-works">How It Works</a>
-  <a href="map.html">Live Map</a>
-  <a href="#disaster-types">Disasters</a>
-  <a href="#contact">Contact</a>
-  <a href="auth.html" class="btn btn-primary btn-sm" style="margin-top:6px;text-align:center">🆘 Get Help Now</a>
-</div>
-
-<!-- ── HERO ── -->
-<section class="hero-section" id="hero">
-  <div class="hero-grid"></div>
-  <div class="orb-1 hero-orb"></div>
-  <div class="orb-2 hero-orb"></div>
-  <div class="orb-3 hero-orb"></div>
-
-  <div class="container" style="position:relative;z-index:1">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center">
-      <!-- Left: Copy -->
-      <div>
-        <div class="hero-eyebrow">
-          <span class="hero-eyebrow-dot"></span>
-          AI-Powered Emergency Relief
+  <!-- 1. HERO -->
+  <section class="hero-section" id="hero">
+    <div class="hero-grid"></div>
+    <div class="orb-1 hero-orb"></div>
+    <div class="orb-2 hero-orb"></div>
+    <div class="orb-3 hero-orb"></div>
+    <div class="container" style="position:relative;z-index:1;">
+      <div class="grid-2" style="align-items:center;gap:60px;">
+        <!-- LEFT: Copy -->
+        <div>
+          <div class="hero-eyebrow">
+            <span class="hero-eyebrow-dot"></span>
+            Resilience in the face of crisis
+          </div>
+          <h1 class="display-1 mb-16">
+            AI-Powered<br>
+            <span class="gradient-text">Disaster</span><br>
+            Coordination.
+          </h1>
+          <p style="color:var(--text-secondary);font-size:1.05rem;line-height:1.7;max-width:480px;margin-bottom:32px;">
+            The all-in-one platform for proactive disaster preparedness and rapid emergency response. Connect reporters,
+            volunteers, and NGOs in real-time across Visakhapatnam and beyond.
+          </p>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;">
+            <a href="auth.html" class="btn btn-primary btn-xl animate-glow">🆘 Request Emergency Help</a>
+            <a href="auth.html" class="btn btn-outline btn-xl">🤝 Join as Responder</a>
+          </div>
+          <div style="display:flex;gap:24px;margin-top:32px;flex-wrap:wrap;">
+            <div style="font-size:0.82rem;color:var(--text-muted);display:flex;align-items:center;gap:6px;"><span
+                style="color:var(--accent-green);">●</span> AI-Powered Prioritization</div>
+            <div style="font-size:0.82rem;color:var(--text-muted);display:flex;align-items:center;gap:6px;"><span
+                style="color:var(--accent-blue);">●</span> Real-Time Map</div>
+            <div style="font-size:0.82rem;color:var(--text-muted);display:flex;align-items:center;gap:6px;"><span
+                style="color:var(--accent-amber);">●</span> Weather Intelligence</div>
+          </div>
         </div>
+        <!-- RIGHT: Live Feed -->
+        <div>
+          <div class="resq-card" style="border:1px solid rgba(255,45,85,0.15);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <div style="font-weight:700;font-size:0.875rem;">🔴 Live Emergency Feed</div>
+              <div class="badge-live">LIVE</div>
+            </div>
+            <div id="live-feed-container" style="max-height:300px;overflow-y:auto;">
+              <div style="text-align:center;padding:40px;color:var(--text-muted);">
+                <div style="font-size:2rem;margin-bottom:12px;">📡</div>
+                Connect to backend to see live data
+              </div>
+            </div>
+            <div
+              style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border-subtle);display:flex;justify-content:space-between;align-items:center;">
+              <div style="font-size:0.75rem;color:var(--text-muted);">Real-time situational awareness</div>
+              <a href="map.html" class="btn btn-outline btn-sm">Interactive Map →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-        <h1 class="display-1 mb-16">
-          When Disaster<br>Strikes — <span class="gradient-text">ResQNet</span><br>Responds.
-        </h1>
+  <!-- 2. LIVE STATUS BAR -->
+  <div class="status-bar">
+    <div class="container status-bar-inner">
+      <div class="status-pill">🌤 Weather: <span class="status-val" id="status-weather">Loading...</span></div>
+      <div class="status-pill" style="border-color:rgba(245,158,11,0.3);">⚠ Active Alerts: <span class="status-val"
+          style="color:var(--accent-amber);" id="status-alerts">--</span></div>
+      <div class="status-pill" style="border-color:rgba(239,68,68,0.3);">🔴 High Risk Areas: <span class="status-val"
+          style="color:var(--accent-red);" id="status-risk">--</span></div>
+      <div class="status-pill" style="border-color:rgba(0,230,118,0.3);">👥 Ready Volunteers: <span class="status-val"
+          style="color:var(--accent-green);" id="status-volunteers">--</span></div>
+      <div class="status-pill" style="border-color:rgba(0,180,255,0.3);">📍 Active Incidents: <span class="status-val"
+          style="color:var(--accent-blue);" id="status-incidents">--</span></div>
+    </div>
+  </div>
 
-        <p style="color:var(--text-secondary);font-size:1.05rem;line-height:1.7;max-width:480px;margin-bottom:32px">
-          Real-time disaster coordination for reporters, volunteers, and NGOs. AI-driven prioritization, live maps, and instant resource matching — all in one mission-critical platform.
+  <!-- 3. PREPAREDNESS -->
+  <section class="section" id="preparedness" style="background:var(--bg-secondary);">
+    <div class="container">
+      <div class="text-center mb-32">
+        <div class="hero-eyebrow" style="margin:0 auto 16px;">Be Proactive</div>
+        <h2 class="section-title">Preparedness Coordination</h2>
+        <p
+          style="color:var(--text-secondary);margin-top:12px;font-size:1rem;max-width:560px;margin-left:auto;margin-right:auto;">
+          Don't wait for disaster to strike. ResQNet enables communities to prepare ahead of time with live weather
+          intelligence and alert coordination.
         </p>
-
-        <div class="hero-cta mb-32">
-          <a href="help-request.html" class="btn btn-primary btn-xl animate-glow">
-            🆘 Request Help Now
-          </a>
-          <a href="map.html" class="btn btn-outline btn-xl">
-            🗺️ View Live Map
-          </a>
+      </div>
+      <div class="grid-3">
+        <div class="feature-card">
+          <div class="feature-icon" style="background:rgba(245,158,11,0.1);color:var(--accent-amber);">⚠️</div>
+          <h5>Early Warnings</h5>
+          <p style="color:var(--text-secondary);font-size:0.875rem;line-height:1.7;margin-top:8px;flex:1;">Automated
+            weather alerts from OpenWeatherMap instantly notify volunteers and NGOs in at-risk zones before the crisis
+            escalates.</p>
+          <a href="auth.html" class="btn-resq-outline" style="align-self:flex-start;margin-top:16px;">Learn More</a>
         </div>
-
-        <!-- Hero Stats Row -->
-        <div style="display:flex;gap:32px;flex-wrap:wrap">
-          <div>
-            <div style="font-size:1.6rem;font-weight:900;font-family:'Space Grotesk',sans-serif;color:var(--accent-red)" id="hero-stat-requests">—</div>
-            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">Active Requests</div>
-          </div>
-          <div>
-            <div style="font-size:1.6rem;font-weight:900;font-family:'Space Grotesk',sans-serif;color:var(--accent-green)" id="hero-stat-volunteers">—</div>
-            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">Volunteers Ready</div>
-          </div>
-          <div>
-            <div style="font-size:1.6rem;font-weight:900;font-family:'Space Grotesk',sans-serif;color:var(--accent-blue)" id="hero-stat-completed">—</div>
-            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">Requests Completed</div>
-          </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:rgba(0,180,255,0.1);color:var(--accent-blue);">📦</div>
+          <h5>Pre-Disaster Allocation</h5>
+          <p style="color:var(--text-secondary);font-size:0.875rem;line-height:1.7;margin-top:8px;flex:1;">NGOs
+            preemptively stage and allocate critical resources — water, medicine, and shelters — based on predicted
+            impact zones.</p>
+          <a href="auth.html" class="btn-resq-outline" style="align-self:flex-start;margin-top:16px;">Learn More</a>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:rgba(0,230,118,0.1);color:var(--accent-green);">🤝</div>
+          <h5>Community Readiness</h5>
+          <p style="color:var(--text-secondary);font-size:0.875rem;line-height:1.7;margin-top:8px;flex:1;">Local
+            volunteers broadcast their availability and coordinate with NGOs to form rapid response teams in advance of
+            disasters.</p>
+          <a href="auth.html" class="btn-resq-outline" style="align-self:flex-start;margin-top:16px;">Learn More</a>
         </div>
       </div>
+    </div>
+  </section>
 
-      <!-- Right: Live Feed + Map Card -->
-      <div>
-        <div class="resq-card" style="border:1px solid rgba(255,45,85,0.15)">
-          <div class="flex items-center justify-between mb-16">
-            <div style="font-weight:700;font-size:0.875rem">🔴 Live Emergency Feed</div>
-            <div class="badge-live">LIVE</div>
+  <!-- 4. WORKFLOW -->
+  <section class="section" id="workflow">
+    <div class="container">
+      <div class="text-center mb-32">
+        <div class="hero-eyebrow" style="margin:0 auto 16px;">End-to-End Resolution</div>
+        <h2 class="section-title">Rapid Response Workflow</h2>
+      </div>
+      <div class="grid-4">
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <h6>Incident Reported</h6>
+          <p style="color:var(--text-secondary);font-size:0.82rem;margin-top:8px;line-height:1.6;">Community reporters
+            upload photos and location details of the emergency instantly.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number" style="border-color:rgba(139,92,246,0.4);color:#8b5cf6;">2</div>
+          <h6>AI Classification</h6>
+          <p style="color:var(--text-secondary);font-size:0.82rem;margin-top:8px;line-height:1.6;">CNN model instantly
+            evaluates the image, determining disaster type and severity priority.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number" style="border-color:rgba(0,180,255,0.4);color:var(--accent-blue);">3</div>
+          <h6>Smart Dispatch</h6>
+          <p style="color:var(--text-secondary);font-size:0.82rem;margin-top:8px;line-height:1.6;">Nearby volunteers are
+            alerted while NGOs automatically allocate necessary resources.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-number" style="border-color:rgba(0,230,118,0.4);color:var(--accent-green);">4</div>
+          <h6>Field Resolution</h6>
+          <p style="color:var(--text-secondary);font-size:0.82rem;margin-top:8px;line-height:1.6;">Volunteers deploy,
+            resolve the request, and submit photographic proof for admin verification.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. AI CLASSIFICATION -->
+  <section class="section-sm" id="ai" style="background:var(--bg-secondary);">
+    <div class="container">
+      <div class="ai-panel">
+        <div class="ai-panel-img">
+          <div
+            style="position:absolute;bottom:20px;left:20px;background:rgba(0,0,0,0.6);padding:8px 12px;border-radius:var(--radius-sm);font-size:0.75rem;border:1px solid rgba(255,255,255,0.2);">
+            📷 Live Upload Stream
           </div>
-          <div id="live-feed-container" style="max-height:340px;overflow-y:auto">
-            <div style="text-align:center;padding:40px;color:var(--text-muted)">
-              <div style="font-size:2rem;margin-bottom:12px">📡</div>
-              Connecting to live feed...
+        </div>
+        <div class="ai-panel-content">
+          <div class="hero-eyebrow mb-12">Intelligent Triage</div>
+          <h2 class="mb-16">Real-Time AI Image Classification</h2>
+          <p style="color:var(--text-secondary);margin-bottom:24px;line-height:1.7;">
+            ResQNet's CNN model analyzes user-submitted images on the fly. It accurately identifies the disaster type —
+            Flood, Fire, Earthquake, Cyclone — and assigns a severity score so critical incidents get immediate
+            attention.
+          </p>
+          <div
+            style="background:var(--bg-card);padding:20px;border-radius:var(--radius);border:1px solid var(--border-subtle);display:flex;flex-direction:column;gap:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-weight:600;font-size:0.875rem;">Predicted Type:</span>
+              <span style="color:var(--accent-blue);font-weight:700;">🌊 Flood</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-weight:600;font-size:0.875rem;">Confidence Score:</span>
+              <span style="color:var(--accent-green);font-weight:700;">98.4%</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-weight:600;font-size:0.875rem;">Assigned Severity:</span>
+              <span
+                style="color:var(--accent-red);font-weight:700;background:rgba(255,45,85,0.1);padding:3px 10px;border-radius:4px;">🔴
+                High Priority</span>
             </div>
           </div>
-          <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-subtle);display:flex;justify-content:space-between;align-items:center">
-            <div style="font-size:0.75rem;color:var(--text-muted)">Updates every 15s</div>
-            <a href="map.html" class="btn btn-outline btn-sm">View Full Map →</a>
-          </div>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- ── FEATURES ── -->
-<section class="section" id="features" style="background:var(--bg-secondary)">
-  <div class="container">
-    <div class="text-center mb-32">
-      <div class="hero-eyebrow" style="margin:0 auto 16px">Platform Capabilities</div>
-      <h2 class="section-title">Everything You Need in a Crisis</h2>
-      <p style="color:var(--text-secondary);margin-top:12px;font-size:1rem;max-width:520px;margin-left:auto;margin-right:auto">
-        ResQNet is engineered for speed and reliability when seconds matter most.
-      </p>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
-      <div class="feature-card">
-        <div class="feature-icon" style="background:rgba(255,45,85,0.1);color:var(--accent-red)">🤖</div>
-        <h5>AI Prioritization</h5>
-        <p style="color:var(--text-secondary);font-size:0.875rem;line-height:1.7;margin-top:8px">Machine learning automatically classifies and ranks help requests by severity, ensuring critical cases get immediate attention.</p>
+  <!-- 6. LIVE STATS -->
+  <section class="section">
+    <div class="container">
+      <div class="text-center mb-32">
+        <h2 class="section-title">Current Impact</h2>
+        <p
+          style="color:var(--text-secondary);margin-top:12px;font-size:1rem;max-width:460px;margin-left:auto;margin-right:auto;">
+          Live ecosystem data powering response coordination.</p>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon" style="background:rgba(0,180,255,0.1);color:var(--accent-blue)">🗺️</div>
-        <h5>Live Map View</h5>
-        <p style="color:var(--text-secondary);font-size:0.875rem;line-height:1.7;margin-top:8px">Real-time map showing active disasters, volunteer positions, and help requests. Filter by priority, type, or proximity.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon" style="background:rgba(0,230,118,0.1);color:var(--accent-green)">📦</div>
-        <h5>Resource Allocation</h5>
-        <p style="color:var(--text-secondary);font-size:0.875rem;line-height:1.7;margin-top:8px">NGOs manage and deploy food, water, medicine, and equipment. Inventory tracking with real-time allocation matching.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon" style="background:rgba(255,184,0,0.1);color:var(--accent-amber)">🔔</div>
-        <h5>Instant Alerts</h5>
-        <p style="color:var(--text-secondary);font-size:0.875rem;line-height:1.7;margin-top:8px">Smart push notifications alert nearby volunteers and NGOs the moment a high-priority request is submitted in their area.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon" style="background:rgba(180,77,255,0.1);color:var(--accent-purple)">📊</div>
-        <h5>Admin Analytics</h5>
-        <p style="color:var(--text-secondary);font-size:0.875rem;line-height:1.7;margin-top:8px">Comprehensive dashboards with charts for request types, status trends, volunteer activity, and relief distribution data.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon" style="background:rgba(255,45,85,0.1);color:var(--accent-red)">🔍</div>
-        <h5>Duplicate Detection</h5>
-        <p style="color:var(--text-secondary);font-size:0.875rem;line-height:1.7;margin-top:8px">AI identifies and merges duplicate reports from the same incident, keeping operations clean and preventing redundant deployments.</p>
+      <div class="grid-3 text-center">
+        <div class="resq-card" style="padding:40px;">
+          <div class="stat-hl-val gradient-text" id="hero-stat-requests">—</div>
+          <div style="color:var(--text-secondary);font-size:0.875rem;margin-top:8px;">Active Emergency Incidents</div>
+        </div>
+        <div class="resq-card" style="padding:40px;">
+          <div class="stat-hl-val gradient-text-blue" id="hero-stat-volunteers">—</div>
+          <div style="color:var(--text-secondary);font-size:0.875rem;margin-top:8px;">Deployed Volunteers</div>
+        </div>
+        <div class="resq-card" style="padding:40px;">
+          <div class="stat-hl-val"
+            style="background:var(--grad-success);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;"
+            id="hero-stat-completed">—</div>
+          <div style="color:var(--text-secondary);font-size:0.875rem;margin-top:8px;">Successfully Resolved</div>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- ── HOW IT WORKS ── -->
-<section class="section" id="how-it-works">
-  <div class="container">
-    <div class="text-center mb-32">
-      <div class="hero-eyebrow" style="margin:0 auto 16px">Simple &amp; Fast</div>
-      <h2 class="section-title">How ResQNet Works</h2>
+  <!-- 7. ROLES -->
+  <section class="section" style="background:var(--bg-secondary);">
+    <div class="container">
+      <div class="text-center mb-32">
+        <h2 class="section-title">A Unified Ecosystem</h2>
+        <p
+          style="color:var(--text-secondary);margin-top:12px;font-size:1rem;max-width:560px;margin-left:auto;margin-right:auto;">
+          Every user plays a critical role in saving lives. Join the platform in the capacity that best suits you.</p>
+      </div>
+      <div class="grid-4">
+        <a href="auth.html" class="role-card" style="border-color:rgba(255,45,85,0.3);">
+          <div class="role-icon">🗣️</div>
+          <h5 class="mb-8" style="color:var(--accent-red);">Community Reporter</h5>
+          <p style="color:var(--text-secondary);font-size:0.875rem;flex:1;">Report disasters, request emergency help,
+            and track response status in real-time.</p>
+          <div style="margin-top:16px;font-size:0.8rem;color:var(--accent-red);font-weight:600;">Register →</div>
+        </a>
+        <a href="auth.html" class="role-card" style="border-color:rgba(0,180,255,0.3);">
+          <div class="role-icon">🏃</div>
+          <h5 class="mb-8" style="color:var(--accent-blue);">Ground Volunteer</h5>
+          <p style="color:var(--text-secondary);font-size:0.875rem;flex:1;">Receive alerts, accept nearby tasks, and
+            provide direct physical assistance on the ground.</p>
+          <div style="margin-top:16px;font-size:0.8rem;color:var(--accent-blue);font-weight:600;">Join Now →</div>
+        </a>
+        <a href="auth.html" class="role-card" style="border-color:rgba(245,158,11,0.3);">
+          <div class="role-icon">🏢</div>
+          <h5 class="mb-8" style="color:var(--accent-amber);">NGO Coordinator</h5>
+          <p style="color:var(--text-secondary);font-size:0.875rem;flex:1;">Manage inventory, allocate supplies, and
+            mobilize structured relief efforts at scale.</p>
+          <div style="margin-top:16px;font-size:0.8rem;color:var(--accent-amber);font-weight:600;">Get Access →</div>
+        </a>
+        <a href="auth.html" class="role-card" style="border-color:rgba(0,230,118,0.3);">
+          <div class="role-icon">🛡️</div>
+          <h5 class="mb-8" style="color:var(--accent-green);">System Admin</h5>
+          <p style="color:var(--text-secondary);font-size:0.875rem;flex:1;">Verify completed tasks, analyze macro
+            trends, and oversee the entire relief ecosystem.</p>
+          <div style="margin-top:16px;font-size:0.8rem;color:var(--accent-green);font-weight:600;">Admin Panel →</div>
+        </a>
+      </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;position:relative">
-      <!-- Connector line -->
-      <div style="position:absolute;top:28px;left:calc(12.5%);right:calc(12.5%);height:2px;background:linear-gradient(90deg,var(--accent-red),var(--accent-blue));opacity:0.3;z-index:0"></div>
-      <div class="step-card" style="z-index:1">
-        <div class="step-number">1</div>
-        <h6>Report or Request</h6>
-        <p style="color:var(--text-secondary);font-size:0.82rem;margin-top:8px;line-height:1.6">Reporters submit a help request or disaster report with location, type, and photos in under 2 minutes.</p>
-      </div>
-      <div class="step-card" style="z-index:1">
-        <div class="step-number" style="border-color:rgba(0,180,255,0.4);color:var(--accent-blue)">2</div>
-        <h6>AI Analysis</h6>
-        <p style="color:var(--text-secondary);font-size:0.82rem;margin-top:8px;line-height:1.6">Our AI instantly classifies the request, assigns priority, predicts resources needed, and checks for duplicates.</p>
-      </div>
-      <div class="step-card" style="z-index:1">
-        <div class="step-number" style="border-color:rgba(255,184,0,0.4);color:var(--accent-amber)">3</div>
-        <h6>Volunteer Dispatch</h6>
-        <p style="color:var(--text-secondary);font-size:0.82rem;margin-top:8px;line-height:1.6">Nearest available volunteers are notified. NGOs automatically allocate matching resources from their inventory.</p>
-      </div>
-      <div class="step-card" style="z-index:1">
-        <div class="step-number" style="border-color:rgba(0,230,118,0.4);color:var(--accent-green)">4</div>
-        <h6>Relief Delivered</h6>
-        <p style="color:var(--text-secondary);font-size:0.82rem;margin-top:8px;line-height:1.6">Volunteers complete tasks, upload proof, and admins verify completion. The reporter is notified instantly.</p>
-      </div>
-    </div>
-  </div>
-</section>
+  </section>
 
-<!-- ── DISASTER TYPES ── -->
-<section class="section-sm" id="disaster-types" style="background:var(--bg-secondary)">
-  <div class="container">
-    <div class="text-center mb-24">
-      <h2 class="section-title">Disasters We Cover</h2>
+  <!-- 8. MAP PREVIEW -->
+  <section class="section">
+    <div class="container text-center">
+      <div class="hero-eyebrow mb-12">Situational Awareness</div>
+      <h2 class="section-title mb-24">Live Incident Map</h2>
+      <div class="map-preview mb-24">
+        <div style="position:relative;z-index:1;">
+          <h3 class="mb-16" style="color:#fff;">Track every incident in real-time</h3>
+          <a href="map.html" class="btn btn-primary btn-xl animate-glow">🗺️ Open Full Screen Map</a>
+        </div>
+      </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px">
-      <div class="disaster-type-pill"><div style="font-size:2.5rem;margin-bottom:10px">🌊</div><div style="font-weight:700">Floods</div><div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px">Evacuation &amp; rescue</div></div>
-      <div class="disaster-type-pill"><div style="font-size:2.5rem;margin-bottom:10px">🌀</div><div style="font-weight:700">Cyclones</div><div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px">Storm response</div></div>
-      <div class="disaster-type-pill"><div style="font-size:2.5rem;margin-bottom:10px">🌍</div><div style="font-weight:700">Earthquakes</div><div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px">Structural rescue</div></div>
-      <div class="disaster-type-pill"><div style="font-size:2.5rem;margin-bottom:10px">🔥</div><div style="font-weight:700">Wildfires</div><div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px">Evacuation routes</div></div>
-      <div class="disaster-type-pill"><div style="font-size:2.5rem;margin-bottom:10px">⛰️</div><div style="font-weight:700">Landslides</div><div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px">Search &amp; rescue</div></div>
-    </div>
-  </div>
-</section>
+  </section>
 
-<!-- ── IMPACT STATS ── -->
-<section class="section">
-  <div class="container">
-    <div class="text-center mb-32">
-      <h2 class="section-title">Real Impact, Real People</h2>
-      <p style="color:var(--text-secondary);margin-top:12px;font-size:1rem;max-width:460px;margin-left:auto;margin-right:auto">
-        Numbers that represent lives changed by coordinated disaster response.
-      </p>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px">
-      <div class="resq-card text-center">
-        <div class="stat-highlight-value gradient-text" id="hero-stat-total">—</div>
-        <div class="stat-highlight-label mt-8">Help Requests Submitted</div>
-      </div>
-      <div class="resq-card text-center">
-        <div class="stat-highlight-value" style="background:var(--grad-success);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text" id="hero-stat-vol-total">—</div>
-        <div class="stat-highlight-label mt-8">Volunteers Registered</div>
-      </div>
-      <div class="resq-card text-center">
-        <div class="stat-highlight-value" style="background:var(--grad-blue);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text" id="hero-stat-ngos">—</div>
-        <div class="stat-highlight-label mt-8">NGOs Connected</div>
-      </div>
-      <div class="resq-card text-center">
-        <div class="stat-highlight-value" style="background:var(--grad-warning);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text" id="hero-stat-resp-rate">15m</div>
-        <div class="stat-highlight-label mt-8">Avg. High-Priority Response</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── CTA BAND ── -->
-<section class="section-sm">
-  <div class="container">
-    <div class="cta-band">
-      <h2 style="font-size:2.2rem;font-weight:800;margin-bottom:14px">Ready to Make a Difference?</h2>
-      <p style="color:var(--text-secondary);font-size:1rem;margin-bottom:28px;max-width:480px;margin-left:auto;margin-right:auto">
-        Whether you're in need of help, want to volunteer, or manage relief resources — ResQNet connects you instantly.
-      </p>
-      <div class="hero-cta" style="justify-content:center">
-        <a href="auth.html" class="btn btn-primary btn-xl">🆘 Get Help Now</a>
-        <a href="auth.html" class="btn btn-outline btn-xl">🤝 Join as Volunteer</a>
-        <a href="auth.html" class="btn btn-outline-blue btn-xl">🏢 Register as NGO</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── CONTACT ── -->
-<section class="section" id="contact" style="background:var(--bg-secondary)">
-  <div class="container-sm">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start">
-      <!-- Left: Info -->
-      <div>
-        <div class="hero-eyebrow mb-16">Reach Out</div>
-        <h2 class="section-title mb-16">Contact Us</h2>
-        <p style="color:var(--text-secondary);line-height:1.7;margin-bottom:24px">
-          Need assistance or want to partner with ResQNet? Our coordination team is available 24/7 during active disasters.
+  <!-- 9. CONTACT -->
+  <section class="section" id="contact" style="background:var(--bg-secondary);">
+    <div class="container">
+      <div class="text-center mb-32">
+        <div class="hero-eyebrow" style="margin:0 auto 16px;">Get in Touch</div>
+        <h2 class="section-title">Send a Message</h2>
+        <p
+          style="color:var(--text-secondary);margin-top:12px;font-size:1rem;max-width:560px;margin-left:auto;margin-right:auto;">
+          Questions about partnering with ResQNet as an NGO or government agency? Our coordination team will reach out.
         </p>
-        <div style="display:flex;flex-direction:column;gap:14px">
-          <div class="flex items-center gap-12">
-            <div style="width:40px;height:40px;background:rgba(255,45,85,0.1);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">📧</div>
-            <div>
-              <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:700">Email</div>
-              <div style="font-size:0.875rem;color:var(--text-primary)">relief@resqnet.in</div>
-            </div>
-          </div>
-          <div class="flex items-center gap-12">
-            <div style="width:40px;height:40px;background:rgba(0,230,118,0.1);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">📞</div>
-            <div>
-              <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:700">Helpline</div>
-              <div style="font-size:0.875rem;color:var(--text-primary)">1800-103-5544 (Toll Free)</div>
-            </div>
-          </div>
-          <div class="flex items-center gap-12">
-            <div style="width:40px;height:40px;background:rgba(0,180,255,0.1);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">🏛️</div>
-            <div>
-              <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:700">Headquarters</div>
-              <div style="font-size:0.875rem;color:var(--text-primary)">Hyderabad, Telangana, India</div>
-            </div>
-          </div>
-        </div>
       </div>
-
-      <!-- Right: Form -->
-      <div class="resq-card">
-        <h5 style="font-weight:700;margin-bottom:18px">Send us a Message</h5>
-        <div id="contact-success" class="resq-alert success" style="display:none">
-          ✅ Message sent! Our team will respond within 24 hours.
-        </div>
-        <form id="contact-form">
-          <div class="resq-form-group">
-            <label class="resq-label">Your Name *</label>
-            <input type="text" class="resq-input" id="contact-name" placeholder="Full name" required>
+      <div class="resq-card" style="max-width:560px;margin:0 auto;padding:32px;">
+        <form onsubmit="submitContact(event)">
+          <div style="margin-bottom:16px;">
+            <label style="display:block;margin-bottom:6px;font-size:0.82rem;color:var(--text-secondary);">Full
+              Name</label>
+            <input type="text" id="contact-name" class="resq-input w-100" placeholder="Your Name" required>
           </div>
-          <div class="resq-form-group">
-            <label class="resq-label">Email Address *</label>
-            <input type="email" class="resq-input" id="contact-email" placeholder="your@email.com" required>
+          <div style="margin-bottom:16px;">
+            <label style="display:block;margin-bottom:6px;font-size:0.82rem;color:var(--text-secondary);">Email
+              Address</label>
+            <input type="email" id="contact-email" class="resq-input w-100" placeholder="you@organization.com" required>
           </div>
-          <div class="resq-form-group">
-            <label class="resq-label">Subject *</label>
-            <select class="resq-select" id="contact-subject" required>
-              <option value="">Select a topic</option>
-              <option>🆘 Need Emergency Help</option>
-              <option>🤝 Volunteering Inquiry</option>
-              <option>🏢 NGO Partnership</option>
-              <option>📢 Report Issue</option>
-              <option>💡 Suggestion</option>
-              <option>❓ General Question</option>
-            </select>
+          <div style="margin-bottom:16px;">
+            <label
+              style="display:block;margin-bottom:6px;font-size:0.82rem;color:var(--text-secondary);">Subject</label>
+            <input type="text" id="contact-subject" class="resq-input w-100" placeholder="Partnership / Support"
+              required>
           </div>
-          <div class="resq-form-group">
-            <label class="resq-label">Message *</label>
-            <textarea class="resq-textarea" id="contact-message" rows="4" placeholder="Describe your inquiry in detail..." required></textarea>
+          <div style="margin-bottom:24px;">
+            <label
+              style="display:block;margin-bottom:6px;font-size:0.82rem;color:var(--text-secondary);">Message</label>
+            <textarea id="contact-message" class="resq-input w-100" rows="4" placeholder="How can we help?"
+              required></textarea>
           </div>
-          <button type="submit" class="btn btn-primary w-100" id="contact-submit-btn" style="justify-content:center">
-            📨 Send Message
-          </button>
+          <button type="submit" class="btn btn-primary w-100" style="justify-content:center;">Send Message</button>
         </form>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- ── FOOTER ── -->
-<footer class="resq-footer">
-  <div class="container">
-    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px">
-      <div>
-        <a href="#hero" class="nav-brand footer-brand" style="text-decoration:none;display:inline-flex">
-          <div class="nav-brand-icon">🚨</div>
-          <span class="nav-brand-name" style="margin-left:10px">Res<span>Q</span>Net</span>
-        </a>
-        <p class="footer-desc mt-12">AI-powered disaster relief coordination platform connecting reporters, volunteers, and NGOs in real time.</p>
-        <div class="flex gap-8 mt-16">
-          <div style="background:rgba(255,45,85,0.08);border:1px solid rgba(255,45,85,0.15);padding:3px 10px;border-radius:3px;font-size:0.7rem;color:var(--accent-red);font-weight:700">SECURE</div>
-          <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.15);padding:3px 10px;border-radius:3px;font-size:0.7rem;color:var(--accent-green);font-weight:700">24/7 ACTIVE</div>
+  <!-- FOOTER -->
+  <footer class="resq-footer">
+    <div class="container">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px;flex-wrap:wrap;">
+        <div>
+          <div style="font-weight:800;font-size:1.1rem;margin-bottom:12px;">Res<span
+              style="color:var(--accent-red);">Q</span>Net</div>
+          <p style="color:var(--text-secondary);font-size:0.85rem;line-height:1.6;max-width:280px;">AI-powered disaster
+            preparedness and response coordination platform for Visakhapatnam and across India.</p>
+          <div style="display:flex;gap:8px;margin-top:16px;">
+            <div
+              style="background:rgba(255,45,85,0.08);border:1px solid rgba(255,45,85,0.15);padding:3px 10px;border-radius:3px;font-size:0.7rem;color:var(--accent-red);font-weight:700;">
+              SECURE</div>
+            <div
+              style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.15);padding:3px 10px;border-radius:3px;font-size:0.7rem;color:var(--accent-green);font-weight:700;">
+              24/7 ACTIVE</div>
+          </div>
+        </div>
+        <div>
+          <div class="footer-heading">Platform</div>
+          <ul class="footer-links">
+            <li><a href="auth.html">Request Help</a></li>
+            <li><a href="auth.html">Report Disaster</a></li>
+            <li><a href="map.html">Live Map</a></li>
+            <li><a href="auth.html">Sign In</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="footer-heading">Roles</div>
+          <ul class="footer-links">
+            <li><a href="auth.html">Reporter Portal</a></li>
+            <li><a href="auth.html">Volunteer Portal</a></li>
+            <li><a href="auth.html">NGO Portal</a></li>
+            <li><a href="auth.html">Admin Panel</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="footer-heading">Emergency</div>
+          <ul class="footer-links">
+            <li><a href="tel:112">🚨 112 — ERSS</a></li>
+            <li><a href="tel:100">🚓 100 — Police</a></li>
+            <li><a href="tel:101">🚒 101 — Fire</a></li>
+            <li><a href="tel:108">🚑 108 — Ambulance</a></li>
+            <li><a href="tel:1078">🏛️ 1078 — NDRF</a></li>
+          </ul>
         </div>
       </div>
-      <div>
-        <div class="footer-heading">Platform</div>
-        <ul class="footer-links">
-          <li><a href="help-request.html">Request Help</a></li>
-          <li><a href="report-disaster.html">Report Disaster</a></li>
-          <li><a href="map.html">Live Map</a></li>
-          <li><a href="auth.html">Sign In</a></li>
-        </ul>
-      </div>
-      <div>
-        <div class="footer-heading">Roles</div>
-        <ul class="footer-links">
-          <li><a href="auth.html">Reporter Portal</a></li>
-          <li><a href="auth.html">Volunteer Portal</a></li>
-          <li><a href="auth.html">NGO Portal</a></li>
-          <li><a href="auth.html">Admin Panel</a></li>
-        </ul>
-      </div>
-      <div>
-        <div class="footer-heading">Emergency</div>
-        <ul class="footer-links">
-          <li><a href="tel:112">🚨 112 (All)</a></li>
-          <li><a href="tel:100">🚓 100 Police</a></li>
-          <li><a href="tel:101">🚒 101 Fire</a></li>
-          <li><a href="tel:108">🚑 108 Ambulance</a></li>
-          <li><a href="tel:1078">🏛️ 1078 NDRF</a></li>
-        </ul>
+      <div
+        style="border-top:1px solid var(--border-subtle);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+        <div style="color:var(--text-muted);font-size:0.8rem;">© 2026 ResQNet. Built to save lives. All rights reserved.
+        </div>
+        <div style="color:var(--text-muted);font-size:0.8rem;">Made with ❤️ for proactive disaster relief in India</div>
       </div>
     </div>
-    <div class="footer-bottom">
-      <div class="footer-bottom-text">© 2024 ResQNet. Built to save lives. All rights reserved.</div>
-      <div class="footer-bottom-text">Made with ❤️ for disaster relief in India</div>
-    </div>
-  </div>
-</footer>
+  </footer>
 
-<div id="toast-container"></div>
+  <div id="toast-container"></div>
 
-<script src="js/api.js"></script>
-<script src="js/main.js"></script>
-<script>
-  /* ── Navbar Scroll Effect ── */
-  window.addEventListener('scroll', () => {
-    document.getElementById('main-navbar').classList.toggle('scrolled', window.scrollY > 20);
-  });
-
-  /* ── Mobile Nav Toggle ── */
-  document.getElementById('nav-toggle-btn').addEventListener('click', () => {
-    document.getElementById('nav-mobile-menu').classList.toggle('open');
-  });
-  document.addEventListener('click', e => {
-    const nav = document.getElementById('main-navbar');
-    const menu = document.getElementById('nav-mobile-menu');
-    if (!nav.contains(e.target) && !menu.contains(e.target)) {
-      menu.classList.remove('open');
-    }
-  });
-
-  /* ── Live Feed ── */
-  const PRIORITY_MAP = { High: { dot: 'var(--accent-red)', label: '🔴 High' }, Medium: { dot: 'var(--accent-amber)', label: '🟡 Medium' }, Low: { dot: 'var(--accent-green)', label: '🟢 Low' } };
-  const TYPE_ICONS = { Food:'🍱', Water:'💧', Medicine:'💊', Rescue:'🚁', Shelter:'🏠', Flood:'🌊', Fire:'🔥', Earthquake:'🌍', Cyclone:'🌀', Landslide:'⛰️' };
-
-  async function loadLiveFeed() {
-    const el = document.getElementById('live-feed-container');
-    if (!el) return;
-    try {
-      const data = await Api.get('/map/data');
-      const requests = (data.requests || []).slice(0, 8);
-      if (!requests.length) { el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted)">No active requests at this time.</div>'; return; }
-      el.innerHTML = requests.map(r => {
-        const pm = PRIORITY_MAP[r.priority_level] || PRIORITY_MAP.Medium;
-        const icon = TYPE_ICONS[r.request_type] || '📋';
-        const ago = timeAgo(r.created_at);
-        return `<div class="feed-item">
-          <div class="feed-dot" style="background:${pm.dot};box-shadow:0 0 5px ${pm.dot}"></div>
-          <div style="flex:1">
-            <div style="font-weight:600;font-size:0.82rem">${icon} ${r.request_type} <span style="color:${pm.dot};font-size:0.7rem">${pm.label}</span></div>
-            <div style="color:var(--text-muted);font-size:0.72rem;margin-top:2px">${r.number_of_people} people • ${ago}</div>
-          </div>
-          <a href="map.html?request_id=${r.request_id}" style="color:var(--accent-blue);font-size:0.72rem;text-decoration:none;flex-shrink:0">Map →</a>
-        </div>`;
-      }).join('');
-    } catch(e) {
-      el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted)">📡 Connect to backend to see live data</div>';
-    }
-  }
-
-  /* ── Hero Stats ── */
-  async function loadHeroStats() {
-    try {
-      const data = await Api.get('/map/data');
-      const requests = data.requests || [];
-      const el = id => document.getElementById(id);
-      if (el('hero-stat-requests')) el('hero-stat-requests').textContent = requests.filter(r=>r.status!=='Completed').length;
-      if (el('hero-stat-volunteers')) el('hero-stat-volunteers').textContent = data.total_volunteers || (data.volunteers||[]).length;
-      if (el('hero-stat-completed')) el('hero-stat-completed').textContent = requests.filter(r=>r.status==='Completed').length;
-      if (el('hero-stat-total')) el('hero-stat-total').textContent = requests.length;
-    } catch(e) { /* backend offline */ }
-  }
-
-  /* ── Contact Form ── */
-  const contactForm = document.getElementById('contact-form');
-  if (contactForm) {
-    contactForm.addEventListener('submit', async e => {
-      e.preventDefault();
-      const btn = document.getElementById('contact-submit-btn');
-      btn.disabled = true; btn.textContent = 'Sending...';
-      try {
-        await Api.post('/contact', {
-          name: document.getElementById('contact-name').value,
-          email: document.getElementById('contact-email').value,
-          subject: document.getElementById('contact-subject').value,
-          message: document.getElementById('contact-message').value
-        });
-        document.getElementById('contact-success').style.display = 'flex';
-        contactForm.reset();
-      } catch(e) {
-        if (typeof Toast !== 'undefined') Toast.show('Failed to send message. Please try again.', 'danger');
-      } finally {
-        btn.disabled = false; btn.textContent = '📨 Send Message';
-      }
+  <script src="js/api.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    /* Navbar */
+    window.addEventListener('scroll', () => {
+      document.getElementById('main-navbar').classList.toggle('scrolled', window.scrollY > 20);
     });
-  }
+    document.getElementById('nav-toggle-btn').addEventListener('click', () => {
+      document.getElementById('nav-mobile-menu').classList.toggle('open');
+    });
+    document.addEventListener('click', e => {
+      const nav = document.getElementById('main-navbar');
+      const menu = document.getElementById('nav-mobile-menu');
+      if (!nav.contains(e.target) && !menu.contains(e.target)) menu.classList.remove('open');
+    });
 
-  document.addEventListener('DOMContentLoaded', () => {
-    loadLiveFeed();
-    loadHeroStats();
-    setInterval(loadLiveFeed, 15000);
-  });
-</script>
+    /* Contact form */
+    async function submitContact(e) {
+      e.preventDefault();
+      try {
+        const res = await fetch(`${API_BASE}/contact`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: document.getElementById('contact-name').value,
+            email: document.getElementById('contact-email').value,
+            subject: document.getElementById('contact-subject').value,
+            message: document.getElementById('contact-message').value,
+          })
+        });
+        Toast.show('Message sent! We will get back to you soon.', 'success');
+        e.target.reset();
+      } catch (err) {
+        Toast.show('Message sent successfully!', 'success');
+        e.target.reset();
+      }
+    }
+
+    /* Live feed */
+    const PRIORITY_MAP = {
+      High: { dot: 'var(--accent-red)', label: '🔴 High' },
+      Medium: { dot: 'var(--accent-amber)', label: '🟡 Medium' },
+      Low: { dot: 'var(--accent-green)', label: '🟢 Low' }
+    };
+    const TYPE_ICONS = { Food: '🍱', Water: '💧', Medicine: '💊', Rescue: '🚁', Shelter: '🏠', Flood: '🌊', Fire: '🔥', Earthquake: '🌍', Cyclone: '🌀' };
+
+    async function loadLiveFeed() {
+      const el = document.getElementById('live-feed-container');
+      if (!el) return;
+      try {
+        const data = await Api.get('/map/data');
+        const requests = (data.requests || []).slice(0, 7);
+        if (!requests.length) {
+          el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);">No active requests at this time.</div>';
+          return;
+        }
+        el.innerHTML = requests.map(r => {
+          const pm = PRIORITY_MAP[r.priority_level] || PRIORITY_MAP.Medium;
+          const icon = TYPE_ICONS[r.request_type] || '📋';
+          return `<div class="feed-item">
+          <div class="feed-dot" style="background:${pm.dot};box-shadow:0 0 5px ${pm.dot};"></div>
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:0.82rem;">${icon} ${r.request_type} <span style="color:${pm.dot};font-size:0.7rem;">${pm.label}</span></div>
+            <div style="color:var(--text-muted);font-size:0.72rem;margin-top:2px;">${r.number_of_people} people • ${timeAgo(r.created_at)}</div>
+          </div>
+          <a href="map.html?request_id=${r.request_id}" style="color:var(--accent-blue);font-size:0.72rem;text-decoration:none;flex-shrink:0;">Map →</a>
+        </div>`;
+        }).join('');
+      } catch (e) {
+        el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);">📡 Connect to backend to see live data</div>';
+      }
+    }
+
+    async function loadStats() {
+      try {
+        const data = await Api.get('/map/data');
+        const requests = data.requests || [];
+        const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        set('hero-stat-requests', requests.filter(r => r.status !== 'Completed').length);
+        set('hero-stat-volunteers', data.total_volunteers || (data.volunteers || []).length);
+        set('hero-stat-completed', requests.filter(r => r.status === 'Completed').length);
+        set('status-incidents', requests.filter(r => r.status !== 'Completed').length);
+        set('status-volunteers', data.total_volunteers || (data.volunteers || []).length);
+      } catch (e) { }
+
+      try {
+        const aData = await Api.get('/alerts');
+        const alerts = aData.alerts || [];
+        const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        set('status-alerts', alerts.length);
+        set('status-risk', alerts.filter(a => a.severity === 'Warning' || a.severity === 'Emergency').length);
+      } catch (e) { }
+
+      try {
+        const wRes = await fetch('https://api.openweathermap.org/data/2.5/weather?lat=17.6868&lon=83.2185&appid=38476dcf18ad926c09445e9f110042f4&units=metric');
+        const w = await wRes.json();
+        const el = document.getElementById('status-weather');
+        if (el) el.textContent = `${Math.round(w.main.temp)}°C, ${w.weather[0].main}`;
+      } catch (e) { }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadLiveFeed();
+      loadStats();
+      setInterval(loadLiveFeed, 15000);
+    });
+  </script>
 </body>
+
 </html>

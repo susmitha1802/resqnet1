@@ -19,13 +19,13 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # JWT
-    JWT_SECRET_KEY           = os.getenv('JWT_SECRET_KEY', 'jwt-secret-resqnet')
+    JWT_SECRET_KEY           = os.getenv('JWT_SECRET_KEY')
     JWT_ACCESS_TOKEN_EXPIRES = 86400  # 24 hours
 
     # File uploads
     UPLOAD_FOLDER      = os.path.join(os.path.dirname(__file__), os.getenv('UPLOAD_FOLDER', 'uploads'))
     MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', 10 * 1024 * 1024))  # 10 MB
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'webp', 'heic', 'svg'}
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
     # CORS
     _cors = os.getenv('CORS_ORIGINS', 'http://127.0.0.1:5500,http://localhost:5500,*')

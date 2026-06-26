@@ -8,10 +8,10 @@
  */
 
 /* ── OSM Dark Tile Layer ──────────────────────────────────────────────────── */
-const OSM_TILE_URL    = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-const OSM_DARK_URL    = 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png';
+const OSM_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const OSM_DARK_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
 const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-const STADIA_ATTR     = '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+const STADIA_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
 /**
  * Create a Leaflet map with a dark OSM tile layer.
@@ -35,14 +35,16 @@ window.ResQMap = {
 
     // Primary: Stadia dark tiles (no key needed for tile.openstreetmap usage)
     // Fallback: Standard OSM
-    const darkLayer = L.tileLayer(OSM_DARK_URL, {
-      attribution: STADIA_ATTR,
-      maxZoom: 19,
+    const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
     });
 
-    const osmLayer = L.tileLayer(OSM_TILE_URL, {
-      attribution: OSM_ATTRIBUTION,
-      maxZoom: 19,
+    const osmLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
     });
 
     // Try dark; on tile error fall back to OSM
@@ -92,7 +94,7 @@ window.ResQMap = {
       className: '',
       html: `<div style="position:relative;width:${size}px;height:${size}px;cursor:pointer">
         <div style="position:absolute;inset:0;border-radius:50%;background:${color};opacity:0.35;animation:resq-ripple 1.5s ease-out infinite"></div>
-        <div style="position:absolute;top:${(size-innerSize)/2}px;left:${(size-innerSize)/2}px;width:${innerSize}px;height:${innerSize}px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 0 8px ${color}"></div>
+        <div style="position:absolute;top:${(size - innerSize) / 2}px;left:${(size - innerSize) / 2}px;width:${innerSize}px;height:${innerSize}px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 0 8px ${color}"></div>
       </div>`,
       iconSize: [size, size],
       iconAnchor: [size / 2, size / 2],
@@ -227,7 +229,7 @@ window.ResQMap = {
    * Debounced — fires 600ms after last keystroke.
    */
   attachSearchBar(map, inputId, resultsId, onSelect) {
-    const input   = document.getElementById(inputId);
+    const input = document.getElementById(inputId);
     const results = document.getElementById(resultsId);
     if (!input || !results) return;
 
@@ -301,14 +303,14 @@ window.ResQMap = {
 })();
 
 /* ── Phase 6: Risk Zones & NGO Depots ───────────────────────────────────── */
-async function loadRiskZones(mapInstance) {
+async function loadRiskZones(mapInstance, targetGroup = null) {
   try {
-    const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : 'http://127.0.0.1:5000';
+    const apiBase = (typeof Api !== 'undefined' && Api.BASE) ? Api.BASE : API_BASE;
     const res = await fetch(`${apiBase}/map/risk-zones`);
     const data = await res.json();
     if (!data.zones) return;
 
-    const colors = { High: '#ef4444', Medium: '#f59e0b', Low: '#22c55e' };
+    const colors = { High: '#ef4444', Medium: '#f97316', Low: '#eab308', Safe: '#22c55e' };
     const icons = { Cyclone: '🌀', Flood: '🌊', Heatwave: '☀️', Storm: '⛈️' };
 
     data.zones.forEach(zone => {
@@ -323,7 +325,7 @@ async function loadRiskZones(mapInstance) {
         opacity: 0.6,
         weight: 2,
         radius: zone.radius_km * 1000
-      }).bindPopup(ResQMap.popupHtml(`<b>${icon} ${zone.alert_type} — ${zone.risk_level} Risk</b><br>${zone.description}`)).addTo(mapInstance);
+      }).bindPopup(ResQMap.popupHtml(`<b>${icon} ${zone.alert_type} — ${zone.risk_level} Risk</b><br>${zone.description}`)).addTo(targetGroup || mapInstance);
 
       // Center marker
       const centerIcon = L.divIcon({
@@ -338,16 +340,16 @@ async function loadRiskZones(mapInstance) {
         iconSize: [24, 24],
         iconAnchor: [12, 12]
       });
-      L.marker([zone.lat, zone.lng], { icon: centerIcon }).bindTooltip(`${icon} ${zone.alert_type} (${zone.risk_level} Risk)`).addTo(mapInstance);
+      L.marker([zone.lat, zone.lng], { icon: centerIcon }).bindTooltip(`${icon} ${zone.alert_type} (${zone.risk_level} Risk)`).addTo(targetGroup || mapInstance);
     });
   } catch (err) {
     console.warn('Could not load risk zones', err);
   }
 }
 
-async function addNgoDepotMarkers(mapInstance) {
+async function addNgoDepotMarkers(mapInstance, targetGroup = null) {
   try {
-    const apiBase = typeof API_BASE !== 'undefined' ? API_BASE : 'http://127.0.0.1:5000';
+    const apiBase = (typeof Api !== 'undefined' && Api.BASE) ? Api.BASE : API_BASE;
     const res = await fetch(`${apiBase}/ngo/locations`);
     if (!res.ok) return;
     const data = await res.json();
@@ -355,7 +357,7 @@ async function addNgoDepotMarkers(mapInstance) {
 
     data.locations.forEach(ngo => {
       if (!ngo.latitude || !ngo.longitude) return;
-      
+
       const icon = L.divIcon({
         className: '',
         html: `<div style="
@@ -370,9 +372,211 @@ async function addNgoDepotMarkers(mapInstance) {
       });
       L.marker([parseFloat(ngo.latitude), parseFloat(ngo.longitude)], { icon })
         .bindPopup(ResQMap.popupHtml(`<b>🏢 ${ngo.name}</b><br>Relief Depot & Organization HQ`))
-        .addTo(mapInstance);
+        .addTo(targetGroup || mapInstance);
     });
   } catch (err) {
     console.warn('Could not load NGO locations', err);
   }
 }
+
+
+/* ── Phase 7: Operational Hub (Geolocation, Reverse Geocode, Layers) ── */
+
+window._geocodeCache = {};
+
+ResQMap.reverseGeocode = async function (lat, lng) {
+  const key = `${parseFloat(lat).toFixed(4)},${parseFloat(lng).toFixed(4)}`;
+  if (window._geocodeCache[key]) return window._geocodeCache[key];
+
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+    if (!res.ok) throw new Error('Nominatim error');
+    const data = await res.json();
+    let name = data.address.village || data.address.town || data.address.city || data.address.county || data.address.state || "Unknown Location";
+    window._geocodeCache[key] = name;
+    return name;
+  } catch (err) {
+    console.warn("Reverse geocode failed:", err);
+    return "Unknown Location";
+  }
+};
+
+ResQMap.getUserLocation = function () {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation not supported"));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      err => reject(err),
+      { enableHighAccuracy: true, timeout: 5000 }
+    );
+  });
+};
+
+ResQMap.getOptimalLocation = async function () {
+  try {
+    if (typeof getActiveLocation === 'function') {
+      const loc = await getActiveLocation();
+      if (loc) return { lat: loc.lat, lng: loc.lng, zoom: 12 };
+    } else {
+      // Fallback: try HTML5 geolocation
+      const pos = await this.getUserLocation();
+      return { lat: pos.lat, lng: pos.lng, zoom: 12 };
+    }
+  } catch (e) {
+    console.warn("Location detection failed, using default.");
+  }
+  return { lat: 20.5937, lng: 78.9629, zoom: 5 }; // India Center
+};
+
+ResQMap.setupOperationalMap = async function (containerId, role = 'admin') {
+  let centerLat = null;
+  let centerLng = null;
+  let hasUserLocation = false;
+
+  // Use shared getActiveLocation() helper: browser geolocation → PostgreSQL profile
+  if (typeof getActiveLocation === 'function') {
+    const loc = await getActiveLocation();
+    if (loc) {
+      centerLat = loc.lat;
+      centerLng = loc.lng;
+      hasUserLocation = true;
+    }
+  } else {
+    // Inline fallback when api.js helper is not yet available
+    try {
+      const pos = await ResQMap.getUserLocation();
+      centerLat = pos.lat;
+      centerLng = pos.lng;
+      hasUserLocation = true;
+    } catch (err) {
+      try {
+        const apiBase = (typeof Api !== 'undefined' && Api.BASE) ? Api.BASE : API_BASE;
+        const token = localStorage.getItem('resqnet_token');
+        if (token) {
+          const res = await fetch(`${apiBase}/profile`, { headers: { 'Authorization': `Bearer ${token}` } });
+          const data = await res.json();
+          if (data.user && data.user.location_lat != null) {
+            centerLat = data.user.location_lat;
+            centerLng = data.user.location_lng;
+            hasUserLocation = true;
+          }
+        }
+      } catch (fallbackErr) { }
+    }
+  }
+
+  // Fall back to India center (no specific city) when location is unavailable
+  const mapLat = centerLat != null ? centerLat : 20.5937;
+  const mapLng = centerLng != null ? centerLng : 78.9629;
+  const mapZoom = centerLat != null ? 12 : 5;
+  const map = ResQMap.createMap(containerId, { lat: mapLat, lng: mapLng, zoom: mapZoom });
+
+  // Layer Groups
+  const layers = {
+    disasterReports: L.layerGroup(),
+    volunteers: L.layerGroup(),
+    ngos: L.layerGroup(),
+    riskZones: L.layerGroup(),
+    currentLocation: L.layerGroup()
+  };
+
+  // Add all layers initially (except maybe Volunteers for Reporters)
+  layers.riskZones.addTo(map);
+  layers.disasterReports.addTo(map);
+  layers.ngos.addTo(map);
+  if (role !== 'reporter') layers.volunteers.addTo(map);
+  layers.currentLocation.addTo(map);
+
+  // Layer Control
+  L.control.layers(null, {
+    "Risk Zones": layers.riskZones,
+    "Incidents & Reports": layers.disasterReports,
+    "NGO Depots": layers.ngos,
+    "Volunteers": layers.volunteers,
+    "My Location": layers.currentLocation
+  }, { position: 'topright' }).addTo(map);
+
+  // Plot Current Location (only when we have a real location, not the India-center fallback)
+  if (hasUserLocation && centerLat != null) {
+    const userIcon = L.divIcon({
+      className: '',
+      html: `<div style="width:20px;height:20px;border-radius:50%;background:#3b82f6;border:3px solid white;box-shadow:0 0 10px #3b82f6;"></div>`,
+      iconSize: [20, 20], iconAnchor: [10, 10]
+    });
+    L.marker([centerLat, centerLng], { icon: userIcon })
+      .bindPopup("<b>📍 Your Current Location</b>")
+      .addTo(layers.currentLocation);
+  }
+
+  // Load Data
+  await loadRiskZones(map, layers.riskZones);
+  await addNgoDepotMarkers(map, layers.ngos);
+
+  // Fetch Requests & Reports
+  try {
+    const apiBase = (typeof Api !== 'undefined' && Api.BASE) ? Api.BASE : API_BASE;
+    const data = await (await fetch(`${apiBase}/map/data`)).json();
+
+    // Plot Requests
+    (data.requests || []).forEach(r => {
+      const color = ResQMap.priorityColor(r.priority_level || 'Medium');
+      const icon = (r.priority_level === 'High') ? ResQMap.pulseIcon(color) : ResQMap.circleIcon(color);
+      const markerId = `req-${r.request_id}`;
+
+      const marker = L.marker([r.latitude, r.longitude], { icon }).addTo(layers.disasterReports);
+      marker.bindPopup(`<div id="popup-${markerId}">Loading...</div>`);
+
+      marker.on('popupopen', async () => {
+        const locName = await ResQMap.reverseGeocode(r.latitude, r.longitude);
+        document.getElementById(`popup-${markerId}`).innerHTML = ResQMap.popupHtml(`
+          <div style="font-size:0.75rem; color:#9ca3af; margin-bottom:4px">📍 ${locName}</div>
+          <b>${r.request_type} (${r.priority_level})</b><br>
+          👥 ${r.number_of_people} people<br>
+          <i>${r.description || ''}</i><br>
+          Status: <span style="color:${color}">${r.status}</span>
+        `);
+      });
+    });
+
+    // Plot AI Reports
+    (data.reports || []).forEach(r => {
+      if (!r.latitude || !r.longitude) return;
+      const color = '#f97316'; // Orange for reports
+      const icon = ResQMap.circleIcon(color);
+      const markerId = `rep-${r.report_id}`;
+
+      const marker = L.marker([r.latitude, r.longitude], { icon }).addTo(layers.disasterReports);
+      marker.bindPopup(`<div id="popup-${markerId}">Loading...</div>`);
+
+      marker.on('popupopen', async () => {
+        const locName = await ResQMap.reverseGeocode(r.latitude, r.longitude);
+        document.getElementById(`popup-${markerId}`).innerHTML = ResQMap.popupHtml(`
+            <div style="font-size:0.75rem; color:#9ca3af; margin-bottom:4px">📍 ${locName}</div>
+            <b>🤖 ${r.disaster_type} Report</b><br>
+            AI Confidence: ${Math.round((r.confidence_score || 0) * 100)}%<br>
+            Reporter: ${r.reporter_name || 'Anonymous'}<br>
+            Status: ${r.status}
+          `);
+      });
+    });
+
+    // Plot Volunteers (if allowed)
+    if (role !== 'reporter') {
+      (data.volunteers || []).forEach(v => {
+        if (!v.last_location_lat || !v.last_location_lng) return;
+        const icon = ResQMap.circleIcon('#3B82F6', 16);
+        L.marker([v.last_location_lat, v.last_location_lng], { icon })
+          .bindPopup(`<b>Volunteer ${v.user_name || ''}</b><br>Status: ${v.availability_status}`)
+          .addTo(layers.volunteers);
+      });
+    }
+
+  } catch (e) {
+    console.warn("Operational map data fetch failed", e);
+  }
+
+  return map;
+};

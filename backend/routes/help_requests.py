@@ -7,7 +7,7 @@ PUT  /help-request/status   — update status (volunteer/admin/ngo)
 """
 import os
 from flask import Blueprint, request, jsonify, current_app
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import get_jwt_identity
 from werkzeug.utils import secure_filename
 
 from extensions import db
@@ -54,15 +54,25 @@ def create_help_request():
     people_raw   = data.get('number_of_people', '1')
     description  = data.get('description', '').strip()
 
+    lat_val = data.get('latitude')
+    lng_val = data.get('longitude')
+    if lat_val is None or lng_val is None:
+        return _error('Invalid latitude, longitude, or number_of_people')
+
     try:
-        latitude  = float(data.get('latitude'))
-        longitude = float(data.get('longitude'))
+        latitude  = float(lat_val)
+        longitude = float(lng_val)
         people    = max(1, int(people_raw))
     except (TypeError, ValueError):
         return _error('Invalid latitude, longitude, or number_of_people')
 
     if not all([name, contact, request_type]):
         return _error('name, contact, and request_type are required')
+
+    if len(name) > 100:
+        return _error('Name must be 100 characters or fewer')
+    if len(description) > 2000:
+        return _error('Description must be 2000 characters or fewer')
 
     valid_types = ('Food', 'Water', 'Medicine', 'Rescue', 'Shelter')
     if request_type not in valid_types:

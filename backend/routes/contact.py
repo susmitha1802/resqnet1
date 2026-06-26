@@ -6,7 +6,7 @@ PUT  /admin/contact-messages/<id>/read
 DELETE /admin/contact-messages/<id>
 """
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required
+
 
 from extensions import db
 from models import ContactMessage

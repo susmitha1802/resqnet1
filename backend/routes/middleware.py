@@ -9,7 +9,7 @@ Usage:
 """
 from functools import wraps
 from flask import jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from extensions import db
 from models import User

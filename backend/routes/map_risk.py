@@ -1,4 +1,5 @@
 import math
+import re
 from datetime import datetime, timezone, timedelta
 from flask import Blueprint, jsonify
 from sqlalchemy import or_
@@ -25,19 +26,45 @@ def count_recent_reports(lat, lng, radius_km):
                 count += 1
     return count
 
-def compute_risk_score(lat, lng, radius_km, severity):
-    alert_score = 0
-    if severity == 'Emergency': alert_score = 3
-    elif severity == 'Warning': alert_score = 2
-    elif severity == 'Watch': alert_score = 1
+def parse_weather_from_desc(description):
+    wind_match = re.search(r'wind\s+([\d\.]+)\s*m/s', description)
+    rain_match = re.search(r'rain\s+([\d\.]+)\s*mm', description)
+    wind_ms = float(wind_match.group(1)) if wind_match else 0
+    rain_mm = float(rain_match.group(1)) if rain_match else 0
+    return wind_ms, rain_mm
+
+def compute_risk_score(lat, lng, radius_km, severity, description):
+    wind_ms, rain_mm = parse_weather_from_desc(description)
+    
+    base_score = 0
+    if rain_mm > 70 and wind_ms > 16.6:
+        base_score = 3
+    elif rain_mm > 70:
+        base_score = 2
+    elif rain_mm > 10:
+        base_score = 1
+    else:
+        if severity == 'Emergency': base_score = 3
+        elif severity == 'Warning': base_score = 2
+        elif severity == 'Watch': base_score = 1
+        else: base_score = 0
+
+    # Keyword boosts
+    desc_lower = description.lower() if description else ""
+    if 'heavy rain' in desc_lower or 'cyclone' in desc_lower or 'flood' in desc_lower or 'high wind' in desc_lower:
+        base_score = max(base_score, 2)
+        if 'cyclone' in desc_lower: 
+            base_score = 3
 
     recent_reports = count_recent_reports(lat, lng, radius_km)
-    report_score = min(recent_reports / 5, 1.0)
-
-    total = (alert_score * 0.6) + (report_score * 0.4)
-    if total >= 1.8:   return "High"
-    elif total >= 0.8: return "Medium"
-    else:              return "Low"
+    report_bump = min(recent_reports // 5, 1)
+    
+    final_score = min(base_score + report_bump, 3)
+    
+    if final_score >= 3:   return "High"
+    elif final_score >= 2: return "Medium"
+    elif final_score >= 1: return "Low"
+    else:                  return "Safe"
 
 @map_risk_bp.route('/map/risk-zones', methods=['GET'])
 def get_risk_zones():
@@ -48,7 +75,7 @@ def get_risk_zones():
     
     zones = []
     for alert in active_alerts:
-        risk_level = compute_risk_score(float(alert.affected_lat), float(alert.affected_lng), float(alert.affected_radius_km), alert.severity)
+        risk_level = compute_risk_score(float(alert.affected_lat), float(alert.affected_lng), float(alert.affected_radius_km), alert.severity, alert.description)
         zones.append({
             "alert_id": alert.alert_id,
             "alert_type": alert.alert_type,

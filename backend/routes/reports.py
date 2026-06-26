@@ -55,6 +55,9 @@ def report_disaster():
     if not all([disaster_type, description, latitude, longitude]):
         return _error('disaster_type, description, latitude, and longitude are required')
 
+    if len(description) > 2000:
+        return _error('Description must be 2000 characters or fewer')
+
     # Save image (first file if multiple)
     img_path = None
     ai_prediction = {"predicted_disaster_type": "Unknown", "confidence": 0.0, "note": None}

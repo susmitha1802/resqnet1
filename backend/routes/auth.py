@@ -43,6 +43,8 @@ def register():
     # ── Validation ─────────────────────────────────────────────────────────────
     if not all([name, email, phone, password]):
         return _error('All fields are required (name, email, phone, password)')
+    if len(name) > 100:
+        return _error('Name must be 100 characters or fewer')
     if len(password) < 6:
         return _error('Password must be at least 6 characters')
     if role not in VALID_ROLES:
@@ -172,6 +174,17 @@ def seed_demo_users():
             'password': 'admin123',
             'role': 'admin',
         },
+        # Real Vizag NGOs
+        {'name': 'Red Cross Visakhapatnam', 'email': 'redcross.vizag@demo.com', 'phone': '0891-2564321', 'password': 'demo123', 'role': 'ngo', 'location': '17.7231,83.3012'},
+        {'name': 'Lions Club Vizag', 'email': 'lions.vizag@demo.com', 'phone': '0891-2751234', 'password': 'demo123', 'role': 'ngo', 'location': '17.6868,83.2185'},
+        {'name': 'Hamstech NGO Vizag', 'email': 'hamstech.vizag@demo.com', 'phone': '0891-2523456', 'password': 'demo123', 'role': 'ngo', 'location': '17.7100,83.2900'},
+        {'name': 'GIET Relief Foundation', 'email': 'giet.relief@demo.com', 'phone': '08812-252222', 'password': 'demo123', 'role': 'ngo', 'location': '17.5449,82.8563'},
+        {'name': 'Rotary Club Vizag', 'email': 'rotary.vizag@demo.com', 'phone': '0891-2714567', 'password': 'demo123', 'role': 'ngo', 'location': '17.7050,83.2980'},
+        {'name': 'HelpAge India Vizag', 'email': 'helpage.vizag@demo.com', 'phone': '0891-2563890', 'password': 'demo123', 'role': 'ngo', 'location': '17.6950,83.3100'},
+        # Vizag Volunteers
+        {'name': 'Ravi Teja', 'email': 'ravi.vol@demo.com', 'phone': '9876543210', 'password': 'demo123', 'role': 'volunteer', 'location': '17.6868,83.2185'},
+        {'name': 'Priya Sharma', 'email': 'priya.vol@demo.com', 'phone': '9876543211', 'password': 'demo123', 'role': 'volunteer', 'location': '17.7100,83.2400'},
+        {'name': 'Kiran Kumar', 'email': 'kiran.vol@demo.com', 'phone': '9876543212', 'password': 'demo123', 'role': 'volunteer', 'location': '17.7300,83.3200'},
     ]
 
     created = []

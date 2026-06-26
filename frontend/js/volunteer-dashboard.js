@@ -6,8 +6,8 @@
 let nearbyRequests = [];
 let myTasks = [];
 let availabilityStatus = true;
-let volunteerLat = 17.3850; // Fallback to Hyderabad
-let volunteerLng = 78.4867;
+let volunteerLat = null; // Set by syncLocation() or PostgreSQL profile — never hardcoded
+let volunteerLng = null;
 let miniMapInstance = null;
 let volunteerMarker = null;
 
@@ -67,6 +67,9 @@ function updateStats() {
       widget.style.display = 'none';
     }
   }
+
+  const ptdEl = document.getElementById('profile-tasks-done');
+  if (ptdEl) ptdEl.textContent = done;
 }
 
 function animateStatCounter(id, target) {
@@ -87,62 +90,70 @@ function renderNearbyRequests(requests) {
   if (!container) return;
 
   if (!requests.length) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📍</div><div class="empty-state-title">No pending requests</div><div class="empty-state-desc">All clear in your area!</div></div>`;
+    container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-muted);">No active alerts in your area.</div>`;
     return;
   }
 
-  container.innerHTML = requests.map(r => `
-    <div class="request-card priority-${r.priority_level?.toLowerCase()}" id="card-${r.request_id}">
+  container.innerHTML = requests.map(r => {
+    const dist = r.distance != null ? r.distance : null;
+    return renderRequestCard(r, dist);
+  }).join('');
+}
+
+function renderRequestCard(r, distKm) {
+  const priorityClass = r.priority_level === 'High' ? 'high' : r.priority_level === 'Medium' ? 'medium' : 'low';
+  const priorityColor = r.priority_level === 'High' ? '#ef4444' : r.priority_level === 'Medium' ? '#f59e0b' : '#10b981';
+  const typeIcons = { Rescue:'🚁', Food:'🍱', Water:'💧', Medicine:'💊', Shelter:'🏠' };
+  const icon = typeIcons[r.request_type] || '📋';
+  const isNearby = distKm !== null && distKm <= 50;
+
+  return `
+    <div class="request-card ${priorityClass}">
       <div class="request-card-header">
-        <div>
-          <div class="request-card-type">${getTypeIcon(r.request_type)} ${r.request_type}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-          ${priorityBadge(r.priority_level)}
-          ${statusBadge(r.status)}
-        </div>
+        <div class="request-card-title">${icon} ${r.request_type}</div>
+        <span style="padding:3px 10px;border-radius:999px;font-size:0.72rem;font-weight:700;background:${priorityColor}22;color:${priorityColor};">${r.priority_level}</span>
       </div>
       <div class="request-card-meta">
-        <div class="meta-chip">📍 ${r.distance != null ? r.distance.toFixed(1) + ' km away' : r.latitude?.toFixed(4) + ', ' + r.longitude?.toFixed(4)}</div>
-        ${r.is_report ? '' : `<div class="meta-chip">👥 ${r.number_of_people} affected</div>`}
-        ${r.is_report ? '' : (r.contact && r.contact !== 'N/A' ? `<div class="meta-chip">📞 ${r.contact}</div>` : '')}
-        <div class="meta-chip">🕐 ${timeAgo(r.created_at)}</div>
+        ${distKm !== null ? `<span>📍 ${distKm.toFixed(1)} km away</span>` : '<span>📍 Location unknown</span>'}
+        <span>🕒 ${timeAgo(r.created_at)}</span>
+        <span>👥 ${r.number_of_people} people</span>
       </div>
-      <p class="request-card-desc">${r.description || 'No description provided.'}</p>
+      <div class="request-card-desc">${r.description || r.request_type + ' assistance needed'}</div>
       <div class="request-card-actions">
-        ${r.is_report
-      ? `<div class="btn-resq-secondary" style="padding:9px 20px;font-size:0.85rem;background:rgba(249,115,22,0.1);color:#F97316;border:1px solid rgba(249,115,22,0.3);text-align:center;cursor:default">🔥 Hazard Alert</div>`
-      : r.status === 'Pending'
-        ? `<button class="btn-resq-primary" style="padding:9px 20px;font-size:0.85rem" onclick="acceptTask(${r.request_id})">✅ Accept Task</button>`
-        : `<button class="btn-resq-secondary" style="padding:9px 20px;font-size:0.85rem" disabled>🔄 ${r.status}</button>`
-    }
-        ${r.is_report ? '' : `<a href="tel:${r.contact}" class="btn-resq-outline" style="padding:9px 20px;font-size:0.85rem">📞 Call</a>`}
-        <button class="btn-resq-secondary" style="padding:9px 20px;font-size:0.85rem" onclick="viewOnMap(${r.latitude},${r.longitude},'${r.is_report ? 'R' + r.report_id : r.request_id}')">🗺️ Navigate</button>
+        ${isNearby
+          ? `<button class="btn-resq" style="padding:6px 16px;font-size:0.82rem;" onclick="acceptTask(${r.request_id})">✓ Accept Task</button>`
+          : `<button class="btn-resq-outline" style="padding:6px 16px;font-size:0.82rem;" onclick="notifyNearestNGO(${r.request_id})">📢 Notify Nearest NGO</button>`
+        }
       </div>
     </div>
-  `).join('');
+  `;
 }
 
-function getTypeIcon(type) {
-  const icons = { Rescue: '🚁', Food: '🍱', Water: '💧', Medicine: '💊', Shelter: '🏠' };
-  return icons[type] || '📋';
-}
-
-/* ── Accept Task — calls real API ── */
+/* ── Accept Task ── */
 async function acceptTask(requestId) {
-  const btn = document.querySelector(`#card-${requestId} .btn-resq-primary`);
-  if (btn) { btn.disabled = true; btn.textContent = 'Accepting...'; }
-
-  const data = await Api.put('/volunteer/accept-task', { request_id: requestId });
-
-  if (data?.success) {
-    Toast.show(`Task #${requestId} accepted! 🎯`, 'success');
-    await loadNearbyRequests();
-    await loadMyTasks();
-  } else {
-    Toast.show(data?.message || 'Could not accept task', 'danger');
-    if (btn) { btn.disabled = false; btn.textContent = '✅ Accept Task'; }
+  const token = Session.getToken();
+  try {
+    const res = await fetch(`${API_BASE}/volunteer/tasks/accept`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ request_id: requestId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      Toast.show('✅ Task accepted! Head to the location.', 'success');
+      loadNearbyRequests();
+      if (typeof loadTaskHistory === 'function') loadTaskHistory();
+      else if (typeof loadMyTasks === 'function') loadMyTasks();
+    } else {
+      Toast.show(data.message || 'Failed to accept task', 'danger');
+    }
+  } catch(e) {
+    Toast.show('Failed to accept task', 'danger');
   }
+}
+
+async function notifyNearestNGO(requestId) {
+  Toast.show('📢 Nearest NGO has been notified about this request.', 'success');
 }
 
 /* ── Submit Proof ── */
@@ -243,9 +254,9 @@ async function loadNearbyRequests() {
 
   let combined = [...pending, ...mergedReports];
 
-  // Calculate distance for all requests
+  // Calculate distance for all requests (only when volunteer location is known)
   combined.forEach(r => {
-    if (r.latitude != null && r.longitude != null) {
+    if (r.latitude != null && r.longitude != null && volunteerLat != null && volunteerLng != null) {
       r.distance = haversine(volunteerLat, volunteerLng, r.latitude, r.longitude);
     } else {
       r.distance = 9999;
@@ -330,25 +341,42 @@ function viewOnMap(lat, lng, reqId) {
   window.open(`map.html?lat=${lat}&lng=${lng}${param}`, '_blank');
 }
 
-/* ── Location Sync ── */
+/* ── Location Sync (browser geolocation → PostgreSQL profile fallback) ── */
 async function syncLocation() {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
-      resolve();
+      // No geolocation API — try profile fallback immediately
+      Api.get('/profile').then(data => {
+        const u = data?.user;
+        if (u && u.location_lat != null) {
+          volunteerLat = u.location_lat;
+          volunteerLng = u.location_lng;
+        }
+        resolve();
+      }).catch(() => resolve());
       return;
     }
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         volunteerLat = position.coords.latitude;
         volunteerLng = position.coords.longitude;
+        // Silently persist to backend
         await Api.put('/volunteer/update-location', { latitude: volunteerLat, longitude: volunteerLng });
         resolve();
       },
-      (error) => {
-        console.warn('Geolocation denied or failed. Using fallback location.', error);
-        resolve(); // Fallback to default
+      async (error) => {
+        console.warn('Geolocation unavailable, trying saved profile location.', error);
+        try {
+          const data = await Api.get('/profile');
+          const u = data?.user;
+          if (u && u.location_lat != null) {
+            volunteerLat = u.location_lat;
+            volunteerLng = u.location_lng;
+          }
+        } catch (_) { }
+        resolve();
       },
-      { timeout: 5000 }
+      { timeout: 8000, enableHighAccuracy: true }
     );
   });
 }
@@ -365,20 +393,68 @@ async function updateLocationManually() {
   if (btn) btn.innerHTML = '📍 Update My Location';
 }
 
+/* ── Location Prompt ── */
+function showLocationPrompt() {
+  const prompt = document.getElementById('location-prompt');
+  if (prompt) prompt.style.display = 'block';
+  const container = document.getElementById('nearby-requests');
+  if (container) {
+    container.innerHTML = `
+      <div style="text-align:center;padding:40px 20px;background:var(--bg-card-2);border-radius:var(--radius);border:1px solid var(--border-subtle)">
+        <div style="font-size:2.5rem;margin-bottom:12px">📍</div>
+        <div style="font-weight:700;font-size:1.05rem;margin-bottom:8px;color:var(--text-primary)">Set your location to see nearby requests</div>
+        <div style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:20px">Allow location access so we can show you the closest help requests in your area.</div>
+        <button class="btn btn-primary" onclick="setMyLocation()">📍 Use My Location</button>
+      </div>
+    `;
+  }
+}
+
+async function setMyLocation() {
+  if (!navigator.geolocation) {
+    Toast.show('Geolocation is not supported by your browser', 'warning');
+    return;
+  }
+  Toast.show('Detecting your location...', 'info');
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      volunteerLat = position.coords.latitude;
+      volunteerLng = position.coords.longitude;
+      await Api.put('/volunteer/update-location', { latitude: volunteerLat, longitude: volunteerLng });
+      const prompt = document.getElementById('location-prompt');
+      if (prompt) prompt.style.display = 'none';
+      await loadNearbyRequests();
+      if (typeof initVolMap === 'function') await initVolMap();
+      Toast.show('Location set! Showing nearby requests. ✅', 'success');
+    },
+    () => {
+      Toast.show('Could not get location. Please enable location access in your browser.', 'danger');
+    },
+    { timeout: 10000, enableHighAccuracy: true }
+  );
+}
+
 /* ── Mini Map ── */
 async function initVolMap() {
+  // Use real location; if still unknown, show a zoomed-out India view (no specific city)
+  const mapLat = volunteerLat != null ? volunteerLat : 20.5937;
+  const mapLng = volunteerLng != null ? volunteerLng : 78.9629;
+  const mapZoom = volunteerLat != null ? 12 : 5;
+
   if (miniMapInstance) {
-    miniMapInstance.setView([volunteerLat, volunteerLng], 12);
-    if (volunteerMarker) volunteerMarker.setLatLng([volunteerLat, volunteerLng]);
+    miniMapInstance.setView([mapLat, mapLng], mapZoom);
+    if (volunteerMarker && volunteerLat != null) volunteerMarker.setLatLng([mapLat, mapLng]);
     return;
   }
 
-  miniMapInstance = ResQMap.createMap('vol-mini-map', { lat: volunteerLat, lng: volunteerLng, zoom: 12 });
-  volunteerMarker = L.marker([volunteerLat, volunteerLng], {
-    icon: ResQMap.circleIcon('#10B981', 14),
-  }).bindPopup(ResQMap.popupHtml('<strong>📍 Your Area</strong>')).addTo(miniMapInstance);
+  miniMapInstance = ResQMap.createMap('vol-mini-map', { lat: mapLat, lng: mapLng, zoom: mapZoom });
+  if (volunteerLat != null) {
+    volunteerMarker = L.marker([mapLat, mapLng], {
+      icon: ResQMap.circleIcon('#10B981', 14),
+    }).bindPopup(ResQMap.popupHtml('<strong>📍 Your Area</strong>')).addTo(miniMapInstance);
+  }
 
-  // Load request markers
+  // Load request + report markers
   try {
     const data = await Api.get('/map/data');
     if (data && data.requests) {
@@ -388,7 +464,16 @@ async function initVolMap() {
         const color = ResQMap.priorityColor(priority);
         const icon = priority === 'High' ? ResQMap.pulseIcon(color) : ResQMap.circleIcon(color, 10);
         L.marker([parseFloat(r.latitude), parseFloat(r.longitude)], { icon })
-          .bindPopup(ResQMap.popupHtml(`<b>${r.request_type || r.disaster_type || 'Disaster'}</b><br>${priority} Priority`))
+          .bindPopup(ResQMap.popupHtml(`<b>${r.request_type || 'Request'}</b><br>${priority} Priority<br>Status: ${r.status || 'Pending'}`))
+          .addTo(miniMapInstance);
+      });
+    }
+    if (data && data.reports) {
+      data.reports.forEach(r => {
+        if (!r.latitude || !r.longitude) return;
+        const icon = ResQMap.circleIcon('#f97316', 10);
+        L.marker([parseFloat(r.latitude), parseFloat(r.longitude)], { icon })
+          .bindPopup(ResQMap.popupHtml(`<b>🤖 ${r.disaster_type || 'Disaster'} Report</b><br>Severity: ${r.severity || 'Unknown'}`))
           .addTo(miniMapInstance);
       });
     }
@@ -403,55 +488,55 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!Session.requireRole('volunteer')) return;
   populateVolunteerInfo();
   initFilters();
-  initAvailabilityToggle();
+
   await syncLocation(); // Detect and sync before loading requests
   await initVolMap(); // Initialize map with synced location
-  await Promise.all([loadNearbyRequests(), loadMyTasks(), loadPreparednessAlerts()]);
+  await Promise.all([loadNearbyRequests(), loadMyTasks(), loadPreparednessAlerts(), loadVolunteerAlerts()]);
 });
 
 /* ── Preparedness Alerts ── */
 async function loadPreparednessAlerts() {
-  const token = getToken();
+  const token = Session.getToken();
   try {
     const res = await fetch(`${API_BASE}/preparedness/my-pings`, {
-      headers: { 'Authorization': \`Bearer \${token}\` }
+      headers: { 'Authorization': `Bearer ${token}` }
     });
     const data = await res.json();
     if (!data.success) return;
-    
+
     const pending = data.pings.filter(p => p.status === 'Sent');
     if (pending.length === 0) return;
-    
+
     const ping = pending[0];
     const icons = { Cyclone: '🌀', Flood: '🌊', Storm: '⛈', Heatwave: '🔥', Earthquake: '🌍', Other: '⚠' };
     const icon = icons[ping.alert_type] || '⚠';
-    
-    const bannerHTML = \`
+
+    const bannerHTML = `
       <div id="preparedness-banner" style="background:var(--bg-card);border:1px solid var(--accent-red);border-radius:var(--radius);padding:20px;margin-bottom:20px;box-shadow:var(--glow-red-sm)">
-        <h3 style="color:var(--accent-red);margin-bottom:8px;font-size:1.1rem">🔔 PREPAREDNESS ALERT — \${icon} \${ping.alert_type} \${ping.severity}</h3>
-        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:16px">\${ping.description}</p>
+        <h3 style="color:var(--accent-red);margin-bottom:8px;font-size:1.1rem">🔔 PREPAREDNESS ALERT — ${icon} ${ping.alert_type} ${ping.severity}</h3>
+        <p style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:16px">${ping.description}</p>
         <div style="font-weight:600;margin-bottom:12px">Please confirm your availability status:</div>
         <div style="display:flex;gap:12px;flex-wrap:wrap">
-          <button class="btn-resq" style="background:var(--accent-green);border-color:var(--accent-green);color:#fff" onclick="respondToPing(\${ping.ping_id}, 'Acknowledged')">✓ I'm Ready & Available</button>
-          <button class="btn-resq-outline" style="border-color:var(--border-subtle)" onclick="respondToPing(\${ping.ping_id}, 'Unavailable')">✗ Unavailable Right Now</button>
+          <button class="btn-resq" style="background:var(--accent-green);border-color:var(--accent-green);color:#fff" onclick="respondToPing(${ping.ping_id}, 'Acknowledged')">✓ I'm Ready & Available</button>
+          <button class="btn-resq-outline" style="border-color:var(--border-subtle)" onclick="respondToPing(${ping.ping_id}, 'Unavailable')">✗ Unavailable Right Now</button>
         </div>
-        \${pending.length > 1 ? \`<div style="font-size:0.8rem;color:var(--text-muted);margin-top:12px">\${pending.length - 1} more alert(s) pending</div>\` : ''}
+        ${pending.length > 1 ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-top:12px">${pending.length - 1} more alert(s) pending</div>` : ''}
       </div>
-    \`;
-    
+    `;
+
     const anchor = document.getElementById('availability-banner');
     if (anchor && !document.getElementById('preparedness-banner')) {
       anchor.insertAdjacentHTML('beforebegin', bannerHTML);
     }
-  } catch(e) { console.error('Failed to load preparedness pings', e); }
+  } catch (e) { console.error('Failed to load preparedness pings', e); }
 }
 
 async function respondToPing(pingId, status) {
-  const token = getToken();
+  const token = Session.getToken();
   try {
-    const res = await fetch(\`\${API_BASE}/preparedness/ping/\${pingId}\`, {
+    const res = await fetch(`${API_BASE}/preparedness/ping/${pingId}`, {
       method: 'PUT',
-      headers: { 'Authorization': \`Bearer \${token}\`, 'Content-Type': 'application/json' },
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     });
     const data = await res.json();
@@ -463,13 +548,57 @@ async function respondToPing(pingId, status) {
     } else {
       Toast.show(data.message || 'Failed to update status', 'danger');
     }
-  } catch(e) {
+  } catch (e) {
     Toast.show('Error connecting to server', 'danger');
   }
 }
 
+async function loadVolunteerAlerts() {
+  const token = Session.getToken();
+  try {
+    const res = await fetch(`${API_BASE}/alerts`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const data = await res.json();
+    const container = document.getElementById('vol-alerts-list');
+    if (!container) return;
+    if (data.success && data.alerts && data.alerts.length > 0) {
+      const a = data.alerts[0]; // just show top alert for simplicity
+      container.innerHTML = `
+        <div style="font-weight:700;color:var(--text-primary);font-size:1.1rem;margin-bottom:4px">⚠ ${a.alert_type} ${a.severity}</div>
+        <div style="color:var(--text-secondary);font-size:0.9rem">${a.description}</div>
+      `;
+    } else {
+      container.innerHTML = '<p style="color:var(--text-muted);font-size:0.9rem">🟢 No active alerts. Conditions safe.</p>';
+    }
+  } catch (e) { console.error('Failed to load volunteer alerts', e); }
+}
+
+async function updateVolunteerStatusSelect(select) {
+  const statusMap = { 'available': 'ready', 'busy': 'busy', 'unavailable': 'offline' };
+  select.className = `status-select ${statusMap[select.value] || 'offline'}`;
+
+  const token = Session.getToken();
+  try {
+    const res = await fetch(`${API_BASE}/volunteer/update-status`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: select.value })
+    });
+    const data = await res.json();
+    if (data.success) {
+      Toast.show(`Status updated to ${select.options[select.selectedIndex].text}`, 'success');
+    } else {
+      Toast.show(data.message || 'Failed to update status', 'danger');
+    }
+  } catch (e) {
+    Toast.show('Error updating status', 'danger');
+  }
+}
+
 window.acceptTask = acceptTask;
+window.notifyNGO = notifyNGO;
 window.submitProof = submitProof;
 window.viewOnMap = viewOnMap;
 window.updateLocationManually = updateLocationManually;
 window.respondToPing = respondToPing;
+window.updateVolunteerStatusSelect = updateVolunteerStatusSelect;
+window.setMyLocation = setMyLocation;

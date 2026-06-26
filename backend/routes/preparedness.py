@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
-from models import User, PreparednessPing, WeatherAlert
+from models import User, PreparednessPing, Volunteer
 from routes.middleware import require_any_role
 
 preparedness_bp = Blueprint('preparedness', __name__)
@@ -63,3 +63,27 @@ def respond_to_ping(ping_id):
     db.session.commit()
     
     return jsonify({'success': True, 'message': 'Ping responded successfully'}), 200
+
+@preparedness_bp.route('/preparedness/summary', methods=['GET'])
+@jwt_required()
+@require_any_role(['admin'])
+def preparedness_summary():
+    vols_ready = Volunteer.query.filter_by(availability_status='available').count()
+    vols_busy = Volunteer.query.filter_by(availability_status='on_task').count()
+    vols_offline = Volunteer.query.filter_by(availability_status='unavailable').count()
+    
+    ngos_ready = User.query.filter_by(role='ngo', availability='available').count()
+    ngos_offline = User.query.filter_by(role='ngo', availability='unavailable').count()
+    
+    return jsonify({
+        'success': True,
+        'volunteers': {
+            'ready': vols_ready,
+            'busy': vols_busy,
+            'offline': vols_offline
+        },
+        'ngos': {
+            'ready': ngos_ready,
+            'offline': ngos_offline
+        }
+    }), 200

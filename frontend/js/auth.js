@@ -7,58 +7,8 @@
 let selectedRole = 'reporter'; // default
 let activeTab    = 'login';
 
-/* ── Role Selection ─────────────────────────────────────────────────────────── */
-function selectRole(role) {
-  selectedRole = role;
-
-  // Highlight selected card
-  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
-  const card = document.getElementById(`role-${role}`);
-  if (card) card.classList.add('selected');
-
-  // Show/hide extras panels (register tab only)
-  const volExtras   = document.getElementById('volunteer-extras');
-  const ngoExtras   = document.getElementById('ngo-extras');
-  const adminExtras = document.getElementById('admin-extras');
-  if (volExtras)   volExtras.classList.toggle('visible',   role === 'volunteer');
-  if (ngoExtras)   ngoExtras.classList.toggle('visible',   role === 'ngo');
-  if (adminExtras) adminExtras.classList.toggle('visible', role === 'admin');
-
-  // Update form heading
-  updateHeading();
-}
-
-function updateHeading() {
-  const heading = document.getElementById('form-heading');
-  if (!heading) return;
-  const roleLabels = {
-    reporter:    'Reporter',
-    volunteer: 'Volunteer',
-    ngo:       'NGO / Organization',
-    admin:     'Administrator',
-  };
-  const label = roleLabels[selectedRole] || 'User';
-  heading.textContent = activeTab === 'login'
-    ? `${label} Login`
-    : `${label} Registration`;
-}
-
-
-/* ── Tab Switching ─────────────────────────────────────────────────────────── */
-function switchTab(tab) {
-  activeTab = tab;
-  const loginForm = document.getElementById('login-form-wrap');
-  const regForm   = document.getElementById('register-form-wrap');
-  const tabs      = document.querySelectorAll('.auth-tab');
-
-  tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  if (loginForm) loginForm.style.display = tab === 'login'    ? 'block' : 'none';
-  if (regForm)   regForm.style.display   = tab === 'register' ? 'block' : 'none';
-
-  updateHeading();
-}
-
-
+/* ── Role Selection & Tabs ─────────────────────────────────────────────────── */
+// Handled by inline script in auth.html
 /* ── Skills Chips ──────────────────────────────────────────────────────────── */
 function initSkillChips() {
   document.querySelectorAll('.skill-chip').forEach(chip => {
@@ -226,9 +176,6 @@ async function handleRegister(e) {
 
 /* ── Init ──────────────────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
-  // Default role
-  selectRole('reporter');
-  switchTab('login');
   initSkillChips();
   initPasswordStrength();
   initPasswordToggle();

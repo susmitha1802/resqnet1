@@ -9,34 +9,32 @@ let selectedRequest = null;
 /* ── Populate User Info ── */
 function populateUserInfo() {
   const user = Session.get();
-  if (!user) return;
-  const name     = user.name || 'User';
-  const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-
-  const unEl = document.getElementById('sidebar-username');
-  if (unEl) unEl.textContent = name;
-  const urEl = document.getElementById('sidebar-userrole');
-  if (urEl) urEl.textContent = 'Disaster Reporter';
-  const avEl = document.getElementById('sidebar-avatar');
-  if (avEl) avEl.textContent = initials;
-
-  const pnEl = document.getElementById('profile-name');
-  if (pnEl) pnEl.textContent = name;
-  document.querySelectorAll('.profile-email').forEach(el => el.textContent = user.email || '');
-  document.querySelectorAll('.profile-phone').forEach(el => el.textContent = user.phone || 'Not set');
+  if (user) {
+    const initials = user.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+    const pa = document.getElementById('profile-avatar');
+    if (pa) pa.textContent = initials;
+    const pn = document.getElementById('profile-name');
+    if (pn) pn.textContent = user.name;
+    const sa = document.getElementById('sidebar-avatar');
+    if (sa) sa.textContent = initials;
+    const su = document.getElementById('sidebar-username');
+    if (su) su.textContent = user.name;
+    document.querySelectorAll('.profile-email').forEach(el => el.textContent = user.email || '—');
+    document.querySelectorAll('.profile-phone').forEach(el => el.textContent = user.phone || '—');
+  }
 }
 
 /* ── Update Stats ── */
 function updateStats() {
-  const total     = currentRequests.length;
-  const pending   = currentRequests.filter(r => r.status === 'Pending').length;
+  const total = currentRequests.length;
+  const pending = currentRequests.filter(r => r.status === 'Pending').length;
   const completed = currentRequests.filter(r => r.status === 'Completed').length;
-  const accepted  = currentRequests.filter(r => r.status === 'Accepted').length;
+  const accepted = currentRequests.filter(r => r.status === 'Accepted').length;
 
-  animateStatCounter('stat-total',     total);
-  animateStatCounter('stat-pending',   pending);
+  animateStatCounter('stat-total', total);
+  animateStatCounter('stat-pending', pending);
   animateStatCounter('stat-completed', completed);
-  animateStatCounter('stat-accepted',  accepted);
+  animateStatCounter('stat-accepted', accepted);
 }
 
 function animateStatCounter(id, target) {
@@ -64,12 +62,11 @@ function renderRequestTable(requests) {
   tbody.innerHTML = requests.map(r => `
     <tr>
       <td><span style="font-family:monospace;font-size:0.8rem;color:var(--text-muted)">#${r.request_id}</span></td>
-      <td><span style="font-weight:600">${r.request_type}</span></td>
+      <td>${r.request_type}</td>
       <td>${priorityBadge(r.priority_level)}</td>
       <td>${statusBadge(r.status)}</td>
-      <td style="color:var(--text-secondary);font-size:0.82rem">${timeAgo(r.created_at)}</td>
-      <td>
-      </td>
+      <td style="color:var(--text-muted);font-size:0.78rem">${timeAgo(r.created_at)}</td>
+      <td><button class="btn-resq-outline" style="padding:3px 10px;font-size:0.72rem;" onclick="showAIResult(${r.request_id})">AI Result</button></td>
     </tr>
   `).join('');
 }
@@ -84,66 +81,33 @@ function renderTimeline(requests) {
     return;
   }
 
-  const steps = ['Pending', 'Accepted', 'In Progress', 'Completed'];
-
   container.innerHTML = requests.map(r => {
-    let currentStep = 0;
-    if (r.status === 'Accepted') currentStep = 1;
-    if (r.status === 'En Route' || r.status === 'On Site') currentStep = 2;
-    if (r.status === 'Completed' || r.status === 'Duplicate') currentStep = 3;
-
-    const timelineHtml = steps.map((step, idx) => {
-      const isPast = idx < currentStep;
-      const isCurrent = idx === currentStep;
-      const color = isPast || isCurrent ? 'var(--primary)' : 'var(--bg-glass)';
-      const textCol = isPast || isCurrent ? 'var(--text-primary)' : 'var(--text-muted)';
-      const fw = isCurrent ? '700' : '500';
-      return `
-        <div style="flex:1;text-align:center;position:relative">
-          <div style="height:4px;background:${color};margin-bottom:8px;border-radius:2px;box-shadow: ${isCurrent ? '0 0 10px var(--primary)' : 'none'}"></div>
-          <div style="font-size:0.75rem;color:${textCol};font-weight:${fw}">${step}</div>
-        </div>
-      `;
-    }).join('');
-
-    const assignedTo = r.assigned_volunteer ? `🧑‍🤝‍🧑 Assigned to: <strong>${r.assigned_volunteer}</strong>` : `⏳ Waiting for volunteer`;
-    
-    return `
-      <div style="border:1px solid var(--border-glass);border-radius:var(--radius);padding:16px;background:var(--bg-card-2);cursor:pointer;transition:var(--transition);" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border-glass)'">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-          <div>
-            <div style="font-weight:700;font-size:1.05rem;display:flex;align-items:center;gap:8px">
-              ${r.request_type} Request <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400;font-family:monospace">#${r.request_id}</span>
-            </div>
-            <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">
-              Last updated: ${timeAgo(r.updated_at || r.created_at)} • ${assignedTo}
-            </div>
-          </div>
-          ${statusBadge(r.status)}
-        </div>
-        <div style="display:flex;gap:4px">
-          ${timelineHtml}
-        </div>
-      </div>
-    `;
+    const color = r.status === 'Completed' ? '#10b981' : (r.status === 'Accepted' ? '#3b82f6' : '#f59e0b');
+    return `<div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-subtle);">
+  <div style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;margin-top:4px;"></div>
+  <div>
+    <div style="font-weight:600;font-size:0.85rem;">${r.request_type} — ${r.status}</div>
+    <div style="font-size:0.75rem;color:var(--text-muted);">${timeAgo(r.created_at)}</div>
+  </div>
+</div>`;
   }).join('');
 }
 
 /* ── Filters ── */
 function initFilters() {
-  const searchInput  = document.getElementById('search-input');
+  const searchInput = document.getElementById('search-input');
   const statusFilter = document.getElementById('status-filter');
-  const typeFilter   = document.getElementById('type-filter');
+  const typeFilter = document.getElementById('type-filter');
 
   const applyFilters = () => {
     let filtered = [...currentRequests];
-    const query  = searchInput?.value.toLowerCase()  || '';
-    const status = statusFilter?.value               || '';
-    const type   = typeFilter?.value                 || '';
+    const query = searchInput?.value.toLowerCase() || '';
+    const status = statusFilter?.value || '';
+    const type = typeFilter?.value || '';
 
-    if (query)  filtered = filtered.filter(r => r.request_type?.toLowerCase().includes(query) || r.description?.toLowerCase().includes(query));
+    if (query) filtered = filtered.filter(r => r.request_type?.toLowerCase().includes(query) || r.description?.toLowerCase().includes(query));
     if (status) filtered = filtered.filter(r => r.status === status);
-    if (type)   filtered = filtered.filter(r => r.request_type === type);
+    if (type) filtered = filtered.filter(r => r.request_type === type);
 
     renderRequestTable(filtered);
     renderTimeline(filtered);
@@ -162,6 +126,33 @@ async function loadRequests() {
   updateStats();
   renderRequestTable(currentRequests);
   renderTimeline(currentRequests);
+  loadNotifications();
+}
+
+function loadNotifications() {
+  const notifList = document.getElementById('notif-list');
+  const notifBadge = document.getElementById('notif-badge');
+  if (!notifList) return;
+
+  if (currentRequests.length === 0) {
+    notifList.innerHTML = '<div class="notif-empty" style="padding:20px;text-align:center;color:var(--text-muted)">No notifications yet.</div>';
+    if (notifBadge) notifBadge.style.display = 'none';
+    return;
+  }
+
+  const recent = [...currentRequests].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
+  notifList.innerHTML = recent.map(r => `
+    <div style="padding:12px;border-bottom:1px solid var(--border-subtle)">
+      <div style="font-weight:600;font-size:0.85rem">Status Update</div>
+      <div style="font-size:0.8rem;color:var(--text-secondary)">Your ${r.request_type} request is now <strong>${r.status}</strong></div>
+      <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">${timeAgo(r.created_at)}</div>
+    </div>
+  `).join('');
+
+  if (notifBadge) {
+    notifBadge.textContent = recent.length;
+    notifBadge.style.display = 'flex';
+  }
 }
 
 /* ── Fetch Disaster Reports ── */
@@ -172,7 +163,7 @@ async function loadDisasters() {
 
   const myReports = (data.reports || []).filter(r => r.user_id === user.user_id);
   const tbody = document.getElementById('disasters-tbody');
-  
+
   if (!tbody) return;
 
   if (myReports.length === 0) {
@@ -180,9 +171,14 @@ async function loadDisasters() {
     return;
   }
 
+  // Attach reports to window for easy access
+  window._myReports = myReports;
+
   tbody.innerHTML = myReports.map(r => `
     <tr>
-      <td style="font-weight:600">🔥 ${r.disaster_type}</td>
+      <td style="font-weight:600">
+        🔥 ${r.disaster_type}
+      </td>
       <td>
         <span class="priority-badge" style="
           background:${r.severity.includes('Severe') ? 'rgba(239,68,68,0.2)' : (r.severity.includes('Moderate') ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.2)')};
@@ -191,25 +187,142 @@ async function loadDisasters() {
       </td>
       <td style="color:var(--text-secondary)">📍 ${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}</td>
       <td>
-        <div style="font-size:0.75rem;line-height:1.2">
-          <strong>${r.predicted_disaster_type || 'Unknown'}</strong><br>
-          <span style="color:var(--text-muted)">${r.prediction_confidence ? r.prediction_confidence + '%' : 'N/A'}</span>
-        </div>
+        ${
+          !r.predicted_disaster_type ? '<span class="ai-badge medium">Pending</span>' :
+          r.ai_mismatch ? '<span class="ai-badge mismatch">Mismatch</span>' :
+          '<span class="ai-badge verified">Verified</span>'
+        }
       </td>
       <td style="color:var(--text-secondary)">${timeAgo(r.created_at)}</td>
       <td>
-        <a href="map.html?report_id=${r.report_id}" class="btn-resq-outline" style="padding:5px 12px;font-size:0.75rem">🗺️ View On Map</a>
+        <div style="display:flex;gap:6px">
+          <button onclick="showAIResult(${r.report_id})" class="btn-resq-outline" style="padding:4px 8px;font-size:0.75rem">🤖 AI Result</button>
+          <a href="map.html?report_id=${r.report_id}" class="btn-resq-outline" style="padding:4px 8px;font-size:0.75rem">🗺️ Map</a>
+        </div>
       </td>
     </tr>
   `).join('');
 }
 
+window.showAIResult = function(reportId) {
+  const r = window._myReports?.find(x => x.report_id === reportId);
+  const panel = document.getElementById('ai-result-panel');
+  if (!panel || !r) return;
+
+  if (!r.predicted_disaster_type) {
+    panel.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-muted)">AI is currently analyzing this report...</div>`;
+    return;
+  }
+
+  const aiConf = r.prediction_confidence || 0;
+  let barColorClass = aiConf >= 80 ? 'high' : (aiConf >= 50 ? 'medium' : 'low');
+  let label = aiConf >= 80 ? 'High' : (aiConf >= 50 ? 'Medium' : 'Low');
+
+  panel.innerHTML = `
+    <div class="ai-card" style="margin-top:0; border:none; box-shadow:none;">
+      <div class="ai-card-title">🤖 AI Analysis Report</div>
+      
+      ${r.image_path ? `<div style="margin-bottom: 16px;"><img src="http://127.0.0.1:5500/backend/${r.image_path.replace(/\\/g, '/')}" style="width:100%; max-height:180px; object-fit:cover; border-radius:6px; border:1px solid var(--border-glass);" alt="Image"></div>` : ''}
+
+      <div class="ai-comparison-grid">
+        <div class="ai-comp-col">
+          <div class="ai-comp-label">Reporter Selected</div>
+          <div class="ai-comp-value">${r.disaster_type}</div>
+        </div>
+        <div class="ai-comp-col" style="border-color: var(--accent-blue);">
+          <div class="ai-comp-label">CNN Prediction</div>
+          <div class="ai-comp-value" style="color: var(--accent-blue);">${r.predicted_disaster_type}</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <span style="font-size:0.8rem; color:var(--text-secondary);">AI Confidence</span>
+          <span style="font-size:0.8rem; font-weight:700;">${aiConf}%</span>
+        </div>
+        <div class="ai-conf-track">
+          <div class="ai-conf-fill ${barColorClass}" style="width: ${aiConf}%;"></div>
+        </div>
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px; text-align:right;">${label}</div>
+      </div>
+
+      <div style="padding-top:12px; border-top:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:0.85rem; color:var(--text-secondary);">Status:</span>
+        ${r.ai_mismatch 
+          ? '<span class="ai-badge mismatch">⚠ Prediction differs</span>' 
+          : '<span class="ai-badge verified">✅ AI agrees</span>'
+        }
+      </div>
+    </div>
+  `;
+}
+
+
+/* ── Live Clock ── */
+function startClock() {
+  const el = document.getElementById('eoc-clock');
+  if (!el) return;
+  const update = () => {
+    const now = new Date();
+    el.textContent = now.toLocaleString('en-IN', {
+      weekday: 'short', day: '2-digit', month: 'short',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+    });
+  };
+  update();
+  setInterval(update, 1000);
+}
+
+/* ── Live Weather — uses real user location ── */
+async function loadWeather() {
+  const loc = await getActiveLocation();
+  if (!loc) {
+    const mainEl = document.getElementById('weather-current-main');
+    if (mainEl) mainEl.innerHTML = '<span style="color:var(--text-muted);font-size:0.85rem">📍 Enable location access to load weather</span>';
+    return;
+  }
+  try {
+    const data = await Api.get(`/weather/live?lat=${loc.lat}&lng=${loc.lng}`);
+    if (!data?.success || !data.current) throw new Error(data?.message || 'No data');
+    const cur = data.current;
+
+    const iconCode = cur.weather[0].icon;
+    const temp = Math.round(cur.main.temp);
+    const desc = cur.weather[0].description.replace(/\b\w/g, c => c.toUpperCase());
+    const humidity = cur.main.humidity;
+    const pressure = cur.main.pressure;
+    const wind = cur.wind.speed;
+    const visibility = cur.visibility ? (cur.visibility / 1000).toFixed(1) : '--';
+
+    const mainEl = document.getElementById('weather-current-main');
+    if (mainEl) mainEl.innerHTML = `
+      <img src="https://openweathermap.org/img/wn/${iconCode}@2x.png" width="60" style="filter:drop-shadow(0 0 8px rgba(255,200,50,0.5))" />
+      <div>
+        <div class="eoc-weather-temp">${temp}°C</div>
+        <div class="eoc-weather-desc" id="weather-current-desc">${desc}</div>
+      </div>
+    `;
+
+    const metricsEl = document.getElementById('weather-current-metrics');
+    if (metricsEl) metricsEl.innerHTML = `
+      <div class="eoc-weather-stat"><span class="eoc-weather-stat-label">Humidity</span><span class="eoc-weather-stat-val">${humidity}%</span></div>
+      <div class="eoc-weather-stat"><span class="eoc-weather-stat-label">Wind</span><span class="eoc-weather-stat-val">${wind} m/s</span></div>
+      <div class="eoc-weather-stat"><span class="eoc-weather-stat-label">Pressure</span><span class="eoc-weather-stat-val">${pressure} hPa</span></div>
+      <div class="eoc-weather-stat"><span class="eoc-weather-stat-label">Visibility</span><span class="eoc-weather-stat-val">${visibility} km</span></div>
+    `;
+  } catch (e) { console.error('Failed to load weather', e); }
+}
+
 /* ── Init ── */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // Route guard: reporter role only
   if (!Session.requireRole('reporter')) return;
   populateUserInfo();
-  loadRequests();
-  loadDisasters();
+  startClock();
+  await Promise.all([
+    loadWeather(),
+    loadRequests(),
+    loadDisasters()
+  ]);
   initFilters();
 });

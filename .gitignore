@@ -1,37 +1,25 @@
-# Environments
 .env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Python
+.env.*
+!.env.example
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-
-# Database
-*.sqlite3
+*.pyc
+*.pyo
+*.db-journal
+*.sqlite-journal
 instance/
-backend/instance/
-
-# Flask & File Uploads
-backend/uploads/
-uploads/
-
-# IDE & OS Files
 .vscode/
 .idea/
+*.log
+*.tmp
+*.bak
+*.swp
+node_modules/
+dist/
+build/
+coverage/
+.pytest_cache/
+.mypy_cache/
 .DS_Store
 Thumbs.db
-*.swp
-
-# Logs and Testing
-*.log
-dummy_disaster.png
-qa_test.py
-e2e_test.py
-temp_disaster_repo/
+backend/uploads/test_scratch/
+backend/uploads/temp/

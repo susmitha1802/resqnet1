@@ -8,6 +8,24 @@ let userLocation = null;
 let aiPreviewShown = false;
 let pickerMap = null;
 
+/* ── AI Priority Logic ── */
+function computeAIPriority(type, peopleStr) {
+  let score = 0;
+  const people = parseInt(peopleStr, 10) || 0;
+  
+  if (type === 'Rescue' || type === 'Medical') score += 50;
+  else if (type === 'Evacuation') score += 30;
+  else score += 10;
+  
+  if (people > 10) score += 40;
+  else if (people > 4) score += 20;
+  else score += 10;
+
+  if (score > 60) return { level: 'High', color: 'var(--danger)', reason: 'Critical needs / Many people affected.' };
+  if (score > 30) return { level: 'Medium', color: 'var(--warning)', reason: 'Moderate risk / Multiple people.' };
+  return { level: 'Low', color: 'var(--success)', reason: 'Standard priority / Few people.' };
+}
+
 /* ── AI Priority Preview ── */
 function updateAIPreview() {
   const type = document.getElementById('request-type')?.value;
@@ -40,14 +58,15 @@ function setLocationFields(lat, lng, address) {
 }
 
 /* ── Init Leaflet Location Picker ── */
-function initLocationPicker() {
+async function initLocationPicker() {
   if (!document.getElementById('location-picker-map')) return;
   if (typeof ResQMap === 'undefined') {
     setTimeout(initLocationPicker, 300);
     return;
   }
 
-  pickerMap = ResQMap.createMap('location-picker-map', { lat: 17.4401, lng: 78.4487, zoom: 12 });
+  const optLoc = await ResQMap.getOptimalLocation();
+  pickerMap = ResQMap.createMap('location-picker-map', { lat: optLoc.lat, lng: optLoc.lng, zoom: optLoc.zoom });
 
   ResQMap.enableLocationPicker(pickerMap, async (lat, lng, address) => {
     setLocationFields(lat, lng, address);

@@ -56,6 +56,15 @@ class User(db.Model):
         self.availability = availability
 
     def to_dict(self) -> dict:
+        # Parse location field — stored as "lat,lng" for volunteers/NGOs, or plain text
+        loc_lat, loc_lng = None, None
+        if self.location and ',' in self.location:
+            parts = self.location.split(',', 1)
+            try:
+                loc_lat = float(parts[0].strip())
+                loc_lng = float(parts[1].strip())
+            except ValueError:
+                pass
         return {
             'user_id':      self.user_id,
             'name':         self.name,
@@ -64,6 +73,8 @@ class User(db.Model):
             'role':         self.role,
             'skills':       self.skills,
             'location':     self.location,
+            'location_lat': loc_lat,
+            'location_lng': loc_lng,
             'availability': self.availability,
             'created_at':   self.created_at.isoformat() + 'Z' if self.created_at else None,
         }
@@ -111,6 +122,14 @@ class DisasterReport(db.Model):
         self.severity                = severity
 
     def to_dict(self) -> dict:
+        # AI mismatch: True when CNN prediction differs from user-reported type
+        predicted = (self.predicted_disaster_type or '').strip().lower()
+        reported  = (self.disaster_type or '').strip().lower()
+        ai_mismatch = bool(
+            predicted
+            and predicted not in ('unknown', 'n/a', '')
+            and predicted != reported
+        )
         return {
             'report_id':     self.report_id,
             'user_id':       self.user_id,
@@ -124,6 +143,7 @@ class DisasterReport(db.Model):
             'longitude':     float(self.longitude),
             'created_at':    self.created_at.isoformat() + 'Z' if self.created_at else None,
             'user_name':     self.user.name if self.user_id else None,
+            'ai_mismatch':   ai_mismatch,
         }
 
 
@@ -242,7 +262,7 @@ class Volunteer(db.Model):
             'assigned_tasks':      self.assigned_tasks,
             'completed_tasks':     self.completed_tasks,
             'rating':              float(self.rating) if self.rating else 5.0,
-            'user_name':           self.user.name if self.user else None,
+            'user_name':           self.user.name if self.user_id else None,
             'last_location_lat':   float(self.last_location_lat) if self.last_location_lat is not None else None,
             'last_location_lng':   float(self.last_location_lng) if self.last_location_lng is not None else None,
         }
@@ -466,5 +486,5 @@ class PreparednessPing(db.Model):
             'status': self.status,
             'sent_at': self.sent_at.isoformat()+'Z' if self.sent_at else None,
             'acknowledged_at': self.acknowledged_at.isoformat()+'Z' if self.acknowledged_at else None,
-            'user_name': self.user.name if self.user else None,
+            'user_name': self.user.name if getattr(self, 'user', None) is not None else None,
         }

@@ -45,7 +45,7 @@ function setLocationFields(lat, lng, address) {
 }
 
 /* ── Init Leaflet Location Picker ── */
-function initLocationPicker() {
+async function initLocationPicker() {
   if (!document.getElementById('location-picker-map')) return;
   if (typeof ResQMap === 'undefined') {
     console.warn('ResQMap not loaded yet — will retry');
@@ -53,9 +53,9 @@ function initLocationPicker() {
     return;
   }
 
-  pickerMap = ResQMap.createMap('location-picker-map', { lat: 17.4401, lng: 78.4487, zoom: 12 });
+  const optLoc = await ResQMap.getOptimalLocation();
+  pickerMap = ResQMap.createMap('location-picker-map', { lat: optLoc.lat, lng: optLoc.lng, zoom: optLoc.zoom });
 
-  // Click-to-pick
   ResQMap.enableLocationPicker(pickerMap, async (lat, lng, address) => {
     setLocationFields(lat, lng, address);
     Toast.show(`📍 Location selected: ${address}`, 'success');
@@ -196,15 +196,61 @@ async function handleReportSubmit(e) {
 
   // Inject AI prediction if available
   if (data?.report?.predicted_disaster_type && data.report.predicted_disaster_type !== 'Unknown') {
-    document.getElementById('ai-prediction-text').textContent = data.report.predicted_disaster_type;
-    document.getElementById('ai-confidence-text').textContent = data.report.prediction_confidence;
+    const aiPred = data.report.predicted_disaster_type;
+    const aiConf = data.report.prediction_confidence;
+    const aiMismatch = data.report.ai_mismatch;
+    const userType = selectedDisasterType;
+    
+    document.getElementById('ai-prediction-text').textContent = aiPred;
+    document.getElementById('ai-reporter-type').textContent = userType;
+    document.getElementById('ai-confidence-pct').textContent = aiConf + '%';
+    
+    // Confidence Bar styling
+    const bar = document.getElementById('ai-confidence-bar');
+    const lbl = document.getElementById('ai-confidence-label');
+    bar.style.width = aiConf + '%';
+    bar.className = 'ai-conf-fill';
+    
+    if (aiConf >= 80) {
+      bar.classList.add('high');
+      lbl.textContent = 'High';
+    } else if (aiConf >= 50) {
+      bar.classList.add('medium');
+      lbl.textContent = 'Medium';
+    } else {
+      bar.classList.add('low');
+      lbl.textContent = 'Low';
+    }
+    
+    // Status Badge
+    const badge = document.getElementById('ai-status-badge');
+    if (aiMismatch) {
+      badge.className = 'ai-badge mismatch';
+      badge.innerHTML = '⚠ AI prediction differs';
+    } else {
+      badge.className = 'ai-badge verified';
+      badge.innerHTML = '✅ AI agrees with report';
+    }
+    
+    // Display uploaded image in AI card
+    if (uploadedFiles.length > 0) {
+      const imgEl = document.getElementById('ai-uploaded-img');
+      imgEl.src = URL.createObjectURL(uploadedFiles[0]);
+      imgEl.style.display = 'block';
+    }
+
     document.getElementById('ai-result-box').style.display = 'block';
   } else if (data?.ai_note) {
-    // The model has no support for this disaster type (e.g. Landslide) —
-    // say so explicitly instead of silently showing nothing or "Unknown",
-    // which would otherwise look like a failed/low-confidence prediction.
     document.getElementById('ai-prediction-text').textContent = 'AI analysis not available';
-    document.getElementById('ai-confidence-text').parentElement.style.display = 'none';
+    const confTrack = document.querySelector('.ai-conf-track');
+    if (confTrack) confTrack.style.display = 'none';
+    document.getElementById('ai-confidence-pct').textContent = 'N/A';
+    document.getElementById('ai-reporter-type').textContent = selectedDisasterType;
+    
+    const badge = document.getElementById('ai-status-badge');
+    badge.className = 'ai-badge medium';
+    badge.innerHTML = 'ℹ Manual Review Needed';
+
     const noteEl = document.getElementById('ai-note-text');
     if (noteEl) { noteEl.textContent = data.ai_note; noteEl.style.display = 'block'; }
     document.getElementById('ai-result-box').style.display = 'block';

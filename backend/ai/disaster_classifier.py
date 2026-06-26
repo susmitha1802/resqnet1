@@ -6,7 +6,6 @@ logger = logging.getLogger(__name__)
 
 # Try to import tensorflow and keras, fallback gracefully if not available
 try:
-    import tensorflow as tf  # type: ignore
     from tensorflow.keras.models import load_model  # type: ignore
     from tensorflow.keras.preprocessing import image  # type: ignore
     TF_AVAILABLE = True

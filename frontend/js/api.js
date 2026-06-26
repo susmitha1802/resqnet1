@@ -6,6 +6,9 @@
 const API_BASE = 'http://127.0.0.1:5000';
 
 const Api = {
+  /** Centralized base URL — use Api.BASE everywhere instead of hardcoding */
+  BASE: API_BASE,
+
   /** Get JWT token from localStorage */
   getToken() {
     return localStorage.getItem('resqnet_token');
@@ -97,3 +100,41 @@ const Api = {
 };
 
 window.Api = Api;
+
+/**
+ * getActiveLocation()
+ * Resolves the user's real coordinates for weather / risk / preparedness calls.
+ *
+ * Priority:
+ *   1. Browser Geolocation (most accurate, live position)
+ *   2. location_lat / location_lng from the user's saved profile (PostgreSQL)
+ *   3. Returns null — callers must handle gracefully (show a message, skip the call)
+ *
+ * Never falls back to a hardcoded city.
+ *
+ * @returns {Promise<{lat: number, lng: number, source: string} | null>}
+ */
+window.getActiveLocation = async function getActiveLocation() {
+  // 1. Try browser geolocation (5-second timeout)
+  const fromBrowser = await new Promise((resolve) => {
+    if (!navigator.geolocation) { resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, source: 'browser' }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 5000 }
+    );
+  });
+  if (fromBrowser) return fromBrowser;
+
+  // 2. Fall back to profile location stored in PostgreSQL
+  try {
+    const data = await Api.get('/profile');
+    const user = data?.user;
+    if (user && user.location_lat != null && user.location_lng != null) {
+      return { lat: user.location_lat, lng: user.location_lng, source: 'profile' };
+    }
+  } catch (_) { }
+
+  // 3. No location available
+  return null;
+};

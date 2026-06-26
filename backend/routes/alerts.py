@@ -8,18 +8,18 @@ GET  /alerts/<id>/responses   — see ping acknowledgements
 GET  /preparedness/my-pings   — volunteer/NGO sees their pings
 PUT  /preparedness/ping/<id>  — volunteer/NGO acknowledges or marks unavailable
 """
-import os, math, requests as http
+import os, math, urllib.request, json
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
-from models import User, WeatherAlert, PreparednessPing, Volunteer
+from models import User, WeatherAlert, PreparednessPing
 
 alerts_bp = Blueprint('alerts', __name__)
 
+DEFAULT_LAT = 20.5937
+DEFAULT_LNG = 78.9629
 OWM_KEY = os.getenv('OPENWEATHER_API_KEY', '')
-DEFAULT_LAT = 17.6868  # Visakhapatnam
-DEFAULT_LNG = 83.2185
 
 def _haversine_km(lat1, lng1, lat2, lng2):
     R = 6371
@@ -71,6 +71,42 @@ def create_alert():
     db.session.commit()
     return jsonify({'success': True, 'alert': alert.to_dict()}), 201
 
+# ── GET /weather/live ──────────────────────────────────────────────────────────
+@alerts_bp.route('/weather/live', methods=['GET'])
+@jwt_required()
+def live_weather():
+    lat = request.args.get('lat', DEFAULT_LAT)
+    lng = request.args.get('lng', DEFAULT_LNG)
+    owm_key = os.getenv('OPENWEATHER_API_KEY', '')
+    if not owm_key:
+        return jsonify({'success': False, 'message': 'OPENWEATHER_API_KEY not set'}), 500
+
+    try:
+        cur_url = f'https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lng}&appid={owm_key}&units=metric'
+        req = urllib.request.Request(cur_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=8) as response:
+            cur_resp = json.loads(response.read().decode('utf-8'))
+        
+        fc_url = f'https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lng}&appid={owm_key}&units=metric'
+        req_fc = urllib.request.Request(fc_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req_fc, timeout=8) as response_fc:
+            fc_data = json.loads(response_fc.read().decode('utf-8'))
+        
+        daily = {}
+        for item in fc_data.get('list', []):
+            dt_txt = item.get('dt_txt', '').split(' ')[0]
+            if dt_txt not in daily:
+                daily[dt_txt] = item
+        forecast_list = list(daily.values())[:5]
+
+        return jsonify({
+            'success': True, 
+            'current': cur_resp,
+            'forecast': forecast_list
+        }), 200
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 # ── POST /alerts/fetch ─────────────────────────────────────────────────────────
 @alerts_bp.route('/alerts/fetch', methods=['POST'])
 @jwt_required()
@@ -79,14 +115,23 @@ def fetch_owm_alerts():
     user = User.query.get(uid)
     if not user or user.role != 'admin':
         return jsonify({'success': False, 'message': 'Admin only'}), 403
-    if not OWM_KEY:
+    
+    owm_key = os.getenv('OPENWEATHER_API_KEY', '')
+    if not owm_key:
         return jsonify({'success': False, 'message': 'OPENWEATHER_API_KEY not set'}), 500
 
-    lat, lng = DEFAULT_LAT, DEFAULT_LNG
-    url = f'https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lng}&appid={OWM_KEY}&units=metric'
+    lat = float(request.args.get('lat', DEFAULT_LAT))
+    lng = float(request.args.get('lng', DEFAULT_LNG))
+    url = f'https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lng}&appid={owm_key}&units=metric'
     try:
-        resp = http.get(url, timeout=8)
-        data = resp.json()
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=8) as response:
+            data = json.loads(response.read().decode('utf-8'))
+        
+        fc_url = f'https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lng}&appid={owm_key}&units=metric'
+        req_fc = urllib.request.Request(fc_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req_fc, timeout=8) as response_fc:
+            fc_data = json.loads(response_fc.read().decode('utf-8'))
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
@@ -94,22 +139,44 @@ def fetch_owm_alerts():
     weather_desc = data.get('weather', [{}])[0].get('description', 'Weather alert')
     temp = data.get('main', {}).get('temp', 0)
     wind = data.get('wind', {}).get('speed', 0)
+    rain = data.get('rain', {}).get('1h', 0)
 
-    # Map OWM weather to alert type
+    alert_type = 'Other'
+    severity = 'Watch'
+
     if 'thunder' in weather_main or 'storm' in weather_main:
         alert_type, severity = 'Storm', 'Warning'
-    elif 'rain' in weather_main or 'drizzle' in weather_main:
+    elif 'rain' in weather_main or rain > 50:
         alert_type, severity = 'Flood', 'Watch'
     elif temp > 42:
         alert_type, severity = 'Heatwave', 'Warning'
     elif wind > 20:
         alert_type, severity = 'Cyclone', 'Watch'
     else:
-        alert_type, severity = 'Other', 'Watch'
+        max_rain = 0
+        max_wind = 0
+        for item in fc_data.get('list', [])[:16]:
+            f_rain = item.get('rain', {}).get('3h', 0) / 3.0
+            f_wind = item.get('wind', {}).get('speed', 0)
+            max_rain = max(max_rain, f_rain)
+            max_wind = max(max_wind, f_wind)
+        
+        if max_rain > 70 or max_wind > 16.6:
+            if max_rain > 70 and max_wind > 16.6:
+                alert_type, severity = 'Cyclone', 'Watch'
+                weather_desc = 'Forecast: Heavy Rain & High Winds'
+            elif max_rain > 70:
+                alert_type, severity = 'Flood', 'Watch'
+                weather_desc = 'Forecast: Heavy Rain Warning'
+            else:
+                alert_type, severity = 'Storm', 'Watch'
+                weather_desc = 'Forecast: High Wind Warning'
+        else:
+            return jsonify({'success': True, 'message': 'No severe weather detected. System is safe.'}), 200
 
     alert = WeatherAlert(
         alert_type=alert_type,
-        description=f'OWM: {weather_desc}, temp {temp}°C, wind {wind}m/s',
+        description=f'OWM: {weather_desc}, temp {temp}°C, wind {wind}m/s, rain {rain}mm',
         affected_lat=lat,
         affected_lng=lng,
         severity=severity,

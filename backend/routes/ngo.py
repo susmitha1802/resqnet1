@@ -12,7 +12,7 @@ from flask_jwt_extended import get_jwt_identity
 
 from extensions import db
 from models import User, HelpRequest, DisasterReport, ReliefResource
-from routes.middleware import require_role, require_any_role
+from routes.middleware import require_role
 
 ngo_bp = Blueprint('ngo', __name__)
 
@@ -188,7 +188,47 @@ def ngo_get_requests():
     })
 
 
-# ── PUT /ngo/allocate ──────────────────────────────────────────────────────────
+# ── GET /ngo/locations ─────────────────────────────────────────────────────────
+@ngo_bp.route('/ngo/locations', methods=['GET'])
+def get_ngo_locations():
+    """
+    Public endpoint returning NGO organisation locations for map display.
+    The 'location' field on NGO users may contain:
+      - a "lat,lng" string  (e.g. "17.7231,83.3012") — parsed directly
+      - an org-name/address string — marker placed at Hyderabad default
+    ---
+    tags:
+      - NGO
+    responses:
+      200:
+        description: List of NGO locations with lat/lng for map rendering
+    """
+    ngos = User.query.filter_by(role='ngo').all()
+
+    locations = []
+    for ngo in ngos:
+        lat, lng = 17.4401, 78.4487  # Hyderabad fallback
+        loc_str = (ngo.location or '').strip()
+
+        # Try "lat,lng" format
+        if ',' in loc_str:
+            parts = loc_str.split(',', 1)
+            try:
+                lat = float(parts[0].strip())
+                lng = float(parts[1].strip())
+            except ValueError:
+                pass  # keep fallback
+
+        locations.append({
+            'name':      ngo.name,
+            'location':  loc_str or 'India',
+            'latitude':  lat,
+            'longitude': lng,
+        })
+
+    return _success({'locations': locations, 'total': len(locations)})
+
+
 @ngo_bp.route('/ngo/allocate', methods=['PUT'])
 @require_role('ngo')
 def ngo_allocate_resource():
