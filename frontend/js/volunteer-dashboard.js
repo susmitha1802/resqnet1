@@ -496,13 +496,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 /* ── Preparedness Alerts ── */
 async function loadPreparednessAlerts() {
-  const token = Session.getToken();
   try {
-    const res = await fetch(`${API_BASE}/preparedness/my-pings`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const data = await res.json();
-    if (!data.success) return;
+    const data = await Api.get('/preparedness/my-pings');
+    if (!data || !data.success) return;
 
     const pending = data.pings.filter(p => p.status === 'Sent');
     if (pending.length === 0) return;
@@ -532,15 +528,9 @@ async function loadPreparednessAlerts() {
 }
 
 async function respondToPing(pingId, status) {
-  const token = Session.getToken();
   try {
-    const res = await fetch(`${API_BASE}/preparedness/ping/${pingId}`, {
-      method: 'PUT',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    });
-    const data = await res.json();
-    if (data.success) {
+    const data = await Api.put(`/preparedness/ping/${pingId}`, { status });
+    if (data && data.success) {
       Toast.show('Status updated successfully!', 'success');
       const banner = document.getElementById('preparedness-banner');
       if (banner) banner.remove();
@@ -554,13 +544,11 @@ async function respondToPing(pingId, status) {
 }
 
 async function loadVolunteerAlerts() {
-  const token = Session.getToken();
   try {
-    const res = await fetch(`${API_BASE}/alerts`, { headers: { 'Authorization': `Bearer ${token}` } });
-    const data = await res.json();
+    const data = await Api.get('/alerts');
     const container = document.getElementById('vol-alerts-list');
     if (!container) return;
-    if (data.success && data.alerts && data.alerts.length > 0) {
+    if (data && data.success && data.alerts && data.alerts.length > 0) {
       const a = data.alerts[0]; // just show top alert for simplicity
       container.innerHTML = `
         <div style="font-weight:700;color:var(--text-primary);font-size:1.1rem;margin-bottom:4px">⚠ ${a.alert_type} ${a.severity}</div>
@@ -576,15 +564,9 @@ async function updateVolunteerStatusSelect(select) {
   const statusMap = { 'available': 'ready', 'busy': 'busy', 'unavailable': 'offline' };
   select.className = `status-select ${statusMap[select.value] || 'offline'}`;
 
-  const token = Session.getToken();
   try {
-    const res = await fetch(`${API_BASE}/volunteer/update-status`, {
-      method: 'PUT',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: select.value })
-    });
-    const data = await res.json();
-    if (data.success) {
+    const data = await Api.put('/volunteer/update-status', { status: select.value });
+    if (data && data.success) {
       Toast.show(`Status updated to ${select.options[select.selectedIndex].text}`, 'success');
     } else {
       Toast.show(data.message || 'Failed to update status', 'danger');

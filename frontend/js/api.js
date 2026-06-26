@@ -28,6 +28,11 @@ const Api = {
         method: 'GET',
         headers: this.headers()
       });
+      if (res.status === 401 || res.status === 422) {
+        if (!endpoint.includes('/login')) {
+          Session.logout('Session invalid or expired. Please log in again.');
+        }
+      }
       return await res.json();
     } catch (err) {
       console.warn(`[API] GET ${endpoint} failed (offline?):`, err.message);
@@ -43,6 +48,11 @@ const Api = {
         headers: this.headers(),
         body: JSON.stringify(body)
       });
+      if (res.status === 401 || res.status === 422) {
+        if (!endpoint.includes('/login') && !endpoint.includes('/register')) {
+          Session.logout('Session invalid or expired. Please log in again.');
+        }
+      }
       return await res.json();
     } catch (err) {
       console.warn(`[API] POST ${endpoint} failed (offline?):`, err.message);
@@ -58,6 +68,9 @@ const Api = {
         headers: this.headers(),
         body: JSON.stringify(body)
       });
+      if (res.status === 401 || res.status === 422) {
+        Session.logout('Session invalid or expired. Please log in again.');
+      }
       return await res.json();
     } catch (err) {
       console.warn(`[API] PUT ${endpoint} failed (offline?):`, err.message);
@@ -72,6 +85,9 @@ const Api = {
         method: 'DELETE',
         headers: this.headers()
       });
+      if (res.status === 401 || res.status === 422) {
+        Session.logout('Session invalid or expired. Please log in again.');
+      }
       return await res.json();
     } catch (err) {
       console.warn(`[API] DELETE ${endpoint} failed (offline?):`, err.message);

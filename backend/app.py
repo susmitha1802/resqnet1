@@ -383,9 +383,7 @@ def create_app(config_class=Config) -> Flask:
     # ── Extensions ────────────────────────────────────────────────────────────
     db.init_app(app)
     jwt.init_app(app)
-    CORS(app,
-         origins=app.config.get('CORS_ORIGINS', ['*']),
-         supports_credentials=True)
+    CORS(app, resources={r"/*": {"origins": "*"}})
 
     # ── Swagger UI ────────────────────────────────────────────────────────────
     Swagger(app, config=SWAGGER_CONFIG, template=SWAGGER_TEMPLATE)

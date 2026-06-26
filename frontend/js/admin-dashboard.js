@@ -508,13 +508,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 /* ── Weather Alerts ── */
 async function loadAlerts() {
-  const token = Session.getToken();
   try {
-    const res = await fetch(`${API_BASE}/alerts`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const data = await res.json();
-    renderAlerts(data.alerts || []);
+    const data = await Api.get('/alerts');
+    renderAlerts(data?.alerts || []);
   } catch (e) {
     document.getElementById('alerts-list').innerHTML = '<p style="color:var(--danger)">Failed to load alerts</p>';
   }
@@ -546,14 +542,9 @@ function renderAlerts(alerts) {
 }
 
 async function notifyAll(alertId) {
-  const token = Session.getToken();
   try {
-    const res = await fetch(`${API_BASE}/alerts/${alertId}/notify`, {
-      method: 'PUT',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const data = await res.json();
-    if (data.success) {
+    const data = await Api.put(`/alerts/${alertId}/notify`);
+    if (data && data.success) {
       Toast.show(`Pings sent to ${data.pings_sent} responders in zone`, 'success');
     } else {
       Toast.show(data.message || 'Failed to send pings', 'danger');
@@ -564,13 +555,9 @@ async function notifyAll(alertId) {
 }
 
 async function viewResponses(alertId) {
-  const token = Session.getToken();
   try {
-    const res = await fetch(`${API_BASE}/alerts/${alertId}/responses`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const data = await res.json();
-    if (data.success) {
+    const data = await Api.get(`/alerts/${alertId}/responses`);
+    if (data && data.success) {
       const responses = data.responses || [];
       const summary = responses.map(p => `${p.user_name} (${p.status})`).join(' | ') || 'No responses yet';
       Toast.show(summary, 'info', 6000);
@@ -594,12 +581,8 @@ async function fetchOWMAlert(e) {
     const lat = loc ? loc.lat : 17.6868;
     const lng = loc ? loc.lng : 83.2185;
 
-    const res = await fetch(`${API_BASE}/alerts/fetch?lat=${lat}&lng=${lng}`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const data = await res.json();
-    if (data.success) {
+    const data = await Api.post(`/alerts/fetch?lat=${lat}&lng=${lng}`, {});
+    if (data && data.success) {
       await loadAlerts();
       await loadWeather();
       await loadPreparednessData();
@@ -634,13 +617,8 @@ async function submitManualAlert() {
     affected_lng: parseFloat(document.getElementById('modal-lng').value) || 0,
     affected_radius_km: parseInt(document.getElementById('modal-radius').value) || 50,
   };
-  const res = await fetch(`${API_BASE}/alerts`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  const data = await res.json();
-  if (data.success) {
+  const data = await Api.post('/alerts', body);
+  if (data && data.success) {
     closeCreateAlertModal();
     await loadAlerts();
   }
@@ -706,14 +684,9 @@ async function loadWeather() {
 
 /* ── Preparedness Data ── */
 async function loadPreparednessData() {
-  const token = Session.getToken();
   try {
-    const res = await fetch(`${API_BASE}/preparedness/summary`, { 
-      headers: { 'Authorization': `Bearer ${token}` } 
-    });
-    if (!res.ok) return; // silently skip if endpoint doesn't exist
-    const data = await res.json();
-    if (data.success) {
+    const data = await Api.get('/preparedness/summary');
+    if (data && data.success) {
       const vEl = document.getElementById('prep-vol-ready');
       const nEl = document.getElementById('prep-ngo-ready');
       if (vEl) vEl.textContent = `🟢 ${data.volunteers?.ready || 0} Volunteers Ready`;
@@ -754,25 +727,17 @@ renderAlerts = function (alerts) {
 };
 
 async function notifyAllResponders(type) {
-  const token = Session.getToken();
   try {
-    const alertsRes = await fetch(`${API_BASE}/alerts`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const alertsData = await alertsRes.json();
-    const alerts = alertsData.alerts || [];
+    const alertsData = await Api.get('/alerts');
+    const alerts = alertsData?.alerts || [];
     if (!alerts.length) {
       Toast.show('No active alerts to notify about', 'warning');
       return;
     }
     let totalPings = 0;
     for (const alert of alerts) {
-      const res = await fetch(`${API_BASE}/alerts/${alert.alert_id}/notify`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      totalPings += data.pings_sent || 0;
+      const data = await Api.put(`/alerts/${alert.alert_id}/notify`);
+      totalPings += data?.pings_sent || 0;
     }
     Toast.show(`✅ ${totalPings} ${type === 'volunteer' ? 'volunteers' : 'NGOs'} notified successfully`, 'success');
   } catch (e) {
