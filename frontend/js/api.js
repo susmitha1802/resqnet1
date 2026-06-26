@@ -3,8 +3,7 @@
  * Centralized fetch wrapper for all backend calls
  */
 
-const API_BASE = 'https://resqnet-backend-y3ur.onrender.com';
-
+const API_BASE = "https://resqnet-backend.onrender.com";
 const Api = {
   /** Centralized base URL — use Api.BASE everywhere instead of hardcoding */
   BASE: API_BASE,
