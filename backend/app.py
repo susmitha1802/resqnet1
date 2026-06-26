@@ -11,7 +11,7 @@ Architecture:
 import os
 from flask import Flask, jsonify
 from flask_cors import CORS
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from flasgger import Swagger  # type: ignore[import-untyped]
 
 from config import Config
