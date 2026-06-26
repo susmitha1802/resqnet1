@@ -44,7 +44,6 @@ def _users_in_radius(lat, lng, radius_km):
 
 # ── GET /alerts ────────────────────────────────────────────────────────────────
 @alerts_bp.route('/alerts', methods=['GET'])
-@jwt_required()
 def list_alerts():
     alerts = WeatherAlert.query.order_by(WeatherAlert.issued_at.desc()).limit(20).all()
     return jsonify({'success': True, 'alerts': [a.to_dict() for a in alerts]}), 200
@@ -73,7 +72,6 @@ def create_alert():
 
 # ── GET /weather/live ──────────────────────────────────────────────────────────
 @alerts_bp.route('/weather/live', methods=['GET'])
-@jwt_required()
 def live_weather():
     lat = request.args.get('lat', DEFAULT_LAT)
     lng = request.args.get('lng', DEFAULT_LNG)
