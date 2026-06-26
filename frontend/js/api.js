@@ -21,10 +21,28 @@ const Api = {
     return h;
   },
 
+  /** Fetch with 60-second timeout for Render cold starts */
+  async fetchWithTimeout(url, options = {}) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    options.signal = controller.signal;
+    try {
+      const res = await fetch(url, options);
+      clearTimeout(timeoutId);
+      return res;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        throw new Error('Server is waking up — please try again in a moment.');
+      }
+      throw err;
+    }
+  },
+
   /** GET request */
   async get(endpoint) {
     try {
-      const res = await fetch(`${API_BASE}${endpoint}`, {
+      const res = await this.fetchWithTimeout(`${API_BASE}${endpoint}`, {
         method: 'GET',
         headers: this.headers()
       });
@@ -43,7 +61,7 @@ const Api = {
   /** POST request */
   async post(endpoint, body) {
     try {
-      const res = await fetch(`${API_BASE}${endpoint}`, {
+      const res = await this.fetchWithTimeout(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: this.headers(),
         body: JSON.stringify(body)
@@ -63,7 +81,7 @@ const Api = {
   /** PUT request */
   async put(endpoint, body) {
     try {
-      const res = await fetch(`${API_BASE}${endpoint}`, {
+      const res = await this.fetchWithTimeout(`${API_BASE}${endpoint}`, {
         method: 'PUT',
         headers: this.headers(),
         body: JSON.stringify(body)
@@ -81,7 +99,7 @@ const Api = {
   /** DELETE request */
   async delete(endpoint) {
     try {
-      const res = await fetch(`${API_BASE}${endpoint}`, {
+      const res = await this.fetchWithTimeout(`${API_BASE}${endpoint}`, {
         method: 'DELETE',
         headers: this.headers()
       });
@@ -101,7 +119,7 @@ const Api = {
       const h = {};
       const token = this.getToken();
       if (token) h['Authorization'] = `Bearer ${token}`;
-      const res = await fetch(`${API_BASE}${endpoint}`, {
+      const res = await this.fetchWithTimeout(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: h,
         body: formData

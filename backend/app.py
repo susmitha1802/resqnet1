@@ -403,6 +403,14 @@ def create_app(config_class=Config) -> Flask:
     # ── Create Tables ─────────────────────────────────────────────────────────
     with app.app_context():
         db.create_all()
+        from models import User
+        if User.query.count() == 0:
+            try:
+                from seed_demo import seed_demo_data
+                seed_demo_data()
+                print("Database was empty. Automatically seeded demo data.")
+            except Exception as e:
+                print(f"Failed to auto-seed database: {e}")
 
     # ── Global Routes ─────────────────────────────────────────────────────────
 
